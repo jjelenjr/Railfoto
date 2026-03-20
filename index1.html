@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stavba Foto-Mapa</title>
-<script src="https://cdn.jsdelivr.net/npm/exifreader@4.14.1/dist/exif-reader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/exifreader@4.14.1/dist/exif-reader.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -134,7 +134,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .empty-list{text-align:center;padding:24px 12px;color:var(--text2);font-size:13px;}
 
 /* MAP */
-#map-wrap{flex:1;position:relative;overflow:hidden;}
+#map-wrap{flex:1;position:relative;overflow:visible;}
 #map{width:100%;height:100%;}
 
 /* PROGRESS */
@@ -149,7 +149,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .toast.err{border-color:var(--red);color:var(--red);}
 
 /* FILTER PANEL */
-#filter-panel{position:absolute;top:52px;right:0;width:320px;background:var(--surface);border:1px solid var(--border2);border-radius:0 0 0 12px;box-shadow:-4px 4px 24px rgba(0,0,0,.4);z-index:200;padding:16px;display:none;flex-direction:column;gap:14px;}
+#filter-panel{position:fixed;top:52px;right:0;width:320px;background:var(--surface);border:1px solid var(--border2);border-radius:0 0 0 12px;box-shadow:-4px 4px 24px rgba(0,0,0,.4);z-index:2000;padding:16px;display:none;flex-direction:column;gap:14px;max-height:calc(100dvh - 52px);overflow-y:auto;}
 #filter-panel.open{display:flex;}
 .filter-section{display:flex;flex-direction:column;gap:8px;}
 .filter-title{font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;}
@@ -328,48 +328,6 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
   <div id="map-wrap">
     <div id="map"></div>
     <div id="pdf-overlay"><canvas id="pdf-canvas"></canvas></div>
-
-    <!-- FILTER PANEL -->
-    <div id="filter-panel">
-      <div class="filter-section">
-        <div class="filter-title">Typ filtru</div>
-        <div class="filter-tabs">
-          <button class="filter-tab active" id="ftab-day" onclick="setFilterTab('day')">Konkrétní den</button>
-          <button class="filter-tab" id="ftab-range" onclick="setFilterTab('range')">Rozsah dat</button>
-          <button class="filter-tab" id="ftab-month" onclick="setFilterTab('month')">Měsíc</button>
-        </div>
-      </div>
-
-      <!-- DEN -->
-      <div id="fmode-day" class="filter-section">
-        <div class="filter-title">Vyber den</div>
-        <input type="date" class="date-inp" id="f-day" oninput="applyFilter()">
-        <div id="day-quick" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;max-height:130px;overflow-y:auto;"></div>
-      </div>
-
-      <!-- ROZSAH -->
-      <div id="fmode-range" class="filter-section" style="display:none">
-        <div class="filter-title">Rozsah dat</div>
-        <div class="date-range-row">
-          <input type="date" class="date-inp" id="f-from" oninput="applyFilter()">
-          <span style="color:var(--text2);font-size:12px;">→</span>
-          <input type="date" class="date-inp" id="f-to" oninput="applyFilter()">
-        </div>
-      </div>
-
-      <!-- MĚSÍC -->
-      <div id="fmode-month" class="filter-section" style="display:none">
-        <div class="filter-title">Vyber měsíc</div>
-        <input type="number" class="date-inp" id="f-year" placeholder="Rok (2025)" style="margin-bottom:6px;" oninput="renderMonthGrid()">
-        <div class="month-grid" id="month-grid"></div>
-      </div>
-
-      <div class="filter-actions">
-        <button class="btn btn-primary btn-sm" onclick="applyFilter()">Použít</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearFilter()">Zrušit filtr</button>
-      </div>
-    </div>
-
     <!-- PDF PANEL -->
     <div id="pdf-panel">
       <div style="font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;" id="pdf-name">—</div>
@@ -740,8 +698,16 @@ function isVisible(p){
 
 // ── MARKERS ───────────────────────────────────────────────────────────────────
 let currentZoom=12;
+let zoomTimeout=null;
 function dotSize(z){return Math.round(8+(z-8)*1.6);}
-function onZoomChange(){const z=map.getZoom();if(z!==currentZoom){currentZoom=z;refreshMarkers();}}
+function onZoomChange(){
+  // Throttle — nepřekresluj při každém stepu animace zoomu
+  clearTimeout(zoomTimeout);
+  zoomTimeout=setTimeout(()=>{
+    const z=map.getZoom();
+    if(z!==currentZoom){currentZoom=z;refreshMarkers();}
+  },150);
+}
 
 function refreshMarkers(){
   if(!markerLayer)return;
@@ -1009,5 +975,39 @@ loadProjects();
 renderProjectScreen();
 setFilterTab('day');
 </script>
+<!-- FILTER PANEL — na úrovni body, position:fixed, žádný overflow ho neořízne -->
+<div id="filter-panel">
+  <div class="filter-section">
+    <div class="filter-title">Typ filtru</div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" id="ftab-day" onclick="setFilterTab('day')">Den</button>
+      <button class="filter-tab" id="ftab-range" onclick="setFilterTab('range')">Rozsah</button>
+      <button class="filter-tab" id="ftab-month" onclick="setFilterTab('month')">Měsíc</button>
+    </div>
+  </div>
+  <div id="fmode-day" class="filter-section">
+    <div class="filter-title">Vyber den</div>
+    <input type="date" class="date-inp" id="f-day" oninput="applyFilter()">
+    <div id="day-quick" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;max-height:130px;overflow-y:auto;"></div>
+  </div>
+  <div id="fmode-range" class="filter-section" style="display:none">
+    <div class="filter-title">Rozsah dat</div>
+    <div class="date-range-row">
+      <input type="date" class="date-inp" id="f-from" oninput="applyFilter()">
+      <span style="color:var(--text2);font-size:12px;">→</span>
+      <input type="date" class="date-inp" id="f-to" oninput="applyFilter()">
+    </div>
+  </div>
+  <div id="fmode-month" class="filter-section" style="display:none">
+    <div class="filter-title">Vyber měsíc</div>
+    <input type="number" class="date-inp" id="f-year" placeholder="Rok (2025)" style="margin-bottom:6px;" oninput="renderMonthGrid()">
+    <div class="month-grid" id="month-grid"></div>
+  </div>
+  <div class="filter-actions">
+    <button class="btn btn-primary btn-sm" onclick="applyFilter()">Použít</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearFilter()">Zrušit filtr</button>
+  </div>
+</div>
+
 </body>
 </html>
