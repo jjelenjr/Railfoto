@@ -6,8 +6,8 @@
 <title>Stavba Foto-Mapa</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/exifreader@4.14.1/dist/exif-reader.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifreader@4.14.1/dist/exif-reader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -389,19 +389,17 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 </div>
 
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-
 const MAPYCZ_API_KEY = '35EKo7UffSWvfZNmflSF28IUk0ulQvxfwNiinl81seA';
 const CAT_COLORS = {kolej:'#f59e0b',propustek:'#3b82f6',odvodneni:'#14b8a6',jine:'#8b5cf6'};
 const CAT_LABELS = {kolej:'Traťová kolej',propustek:'Propustky/mosty',odvodneni:'Odvodnění',jine:'Jiné'};
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
+var editingProjectId=null; // var = hoisted, žádný temporal dead zone problem
 let projects=[], currentProject=null, photos=[], markers={};
 let selectedCat='kolej';
-let filterMode='none'; // none | day | range | month
-let filterDay='', filterFrom='', filterTo='', filterMonth=''; // YYYY-MM
-let SMap2=null, map, markerLayer, tileBase, tileAerial, mapReady=false, isAerial=false;
-let editingProjectId=null;
+let filterMode='none';
+let filterDay='', filterFrom='', filterTo='', filterMonth='';
+let map, markerLayer, tileBase, tileAerial, mapReady=false, isAerial=false;
 // PDF
 let pdfDoc=null, pdfCurrentPage=1, pdfPlaced=false, pdfBounds=null;
 // Lightbox
@@ -971,9 +969,20 @@ function showToast(msg,type=''){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-loadProjects();
-renderProjectScreen();
-setFilterTab('day');
+function initApp() {
+  if(typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  }
+  loadProjects();
+  renderProjectScreen();
+  setFilterTab('day');
+}
+
+if(document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 </script>
 <!-- FILTER PANEL — na úrovni body, position:fixed, žádný overflow ho neořízne -->
 <div id="filter-panel">
