@@ -5,35 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stavba Foto-Mapa</title>
 <script src="https://cdn.jsdelivr.net/npm/exifreader@4.14.1/dist/exif-reader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
-
-:root {
-  --bg:#0f1117; --surface:#181c27; --surface2:#1e2335; --surface3:#242840;
-  --border:#2a3050; --border2:#363d5e;
-  --accent:#f59e0b; --accent2:#3b82f6; --text:#e8eaf0; --text2:#8892a4; --text3:#555f77;
-  --red:#ef4444; --green:#22c55e; --teal:#14b8a6; --purple:#8b5cf6;
+:root{
+  --bg:#0f1117;--surface:#181c27;--surface2:#1e2335;--surface3:#242840;
+  --border:#2a3050;--border2:#363d5e;
+  --accent:#f59e0b;--accent2:#3b82f6;--text:#e8eaf0;--text2:#8892a4;--text3:#555f77;
+  --red:#ef4444;--green:#22c55e;--teal:#14b8a6;--purple:#8b5cf6;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
 
-/* ── OVERLAY ── */
-.overlay{position:fixed;inset:0;background:rgba(10,12,20,.85);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;}
+/* OVERLAY & MODAL */
+.overlay{position:fixed;inset:0;background:rgba(10,12,20,.88);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;}
 .overlay.hidden{display:none;}
-
-/* ── MODAL ── */
-.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(520px,95vw);max-height:90dvh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(540px,96vw);max-height:90dvh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);}
 .modal-header{padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
 .modal-title{font-size:18px;font-weight:600;}
 .modal-sub{font-size:13px;color:var(--text2);margin-top:3px;}
 .modal-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;flex-shrink:0;}
 .modal-close:hover{background:var(--surface2);color:var(--text);}
 .modal-body{padding:20px 24px 24px;display:flex;flex-direction:column;gap:14px;}
-
-/* ── FORM ── */
+.modal-footer{padding:0 24px 24px;display:flex;gap:10px;justify-content:flex-end;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .form-group{display:flex;flex-direction:column;gap:6px;}
 .form-group.full{grid-column:1/-1;}
@@ -43,7 +39,7 @@ label{font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;letter-s
 .inp::placeholder{color:var(--text3);}
 textarea.inp{resize:vertical;min-height:72px;}
 
-/* ── BUTTONS ── */
+/* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:inherit;white-space:nowrap;}
 .btn-primary{background:var(--accent);color:#0f1117;}
 .btn-primary:hover{background:#fbbf24;}
@@ -51,10 +47,10 @@ textarea.inp{resize:vertical;min-height:72px;}
 .btn-danger:hover{background:rgba(239,68,68,.25);}
 .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
 .btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-active{background:var(--accent);color:#0f1117;border:1px solid var(--accent);}
 .btn-sm{padding:5px 10px;font-size:12px;}
-.modal-footer{padding:0 24px 24px;display:flex;gap:10px;justify-content:flex-end;}
 
-/* ── PROJECT SELECT SCREEN ── */
+/* PROJECT SCREEN */
 #project-screen{position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
 #project-screen.hidden{display:none;}
 .ps-logo{font-family:'DM Mono',monospace;font-size:15px;color:var(--accent);letter-spacing:.06em;margin-bottom:40px;}
@@ -64,53 +60,57 @@ textarea.inp{resize:vertical;min-height:72px;}
 .project-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;width:100%;max-width:740px;margin-bottom:20px;}
 .project-card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all .2s;position:relative;}
 .project-card:hover{border-color:var(--accent2);background:var(--surface2);}
-.project-card .pc-code{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.06em;margin-bottom:6px;}
-.project-card .pc-name{font-size:14px;font-weight:600;margin-bottom:4px;}
-.project-card .pc-meta{font-size:11px;color:var(--text2);line-height:1.5;}
-.project-card .pc-count{position:absolute;top:14px;right:14px;font-family:'DM Mono',monospace;font-size:11px;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:2px 8px;color:var(--text2);}
-.project-card .pc-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+.pc-code{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.06em;margin-bottom:6px;}
+.pc-name{font-size:14px;font-weight:600;margin-bottom:4px;}
+.pc-meta{font-size:11px;color:var(--text2);line-height:1.5;}
+.pc-count{position:absolute;top:14px;right:14px;font-family:'DM Mono',monospace;font-size:11px;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:2px 8px;color:var(--text2);}
+.pc-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
 .new-project-card{background:transparent;border:1.5px dashed var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--text2);font-size:14px;}
 .new-project-card:hover{border-color:var(--accent);color:var(--accent);background:rgba(245,158,11,.04);}
 .pc-actions{position:absolute;bottom:12px;right:12px;display:flex;gap:6px;opacity:0;transition:opacity .15s;}
 .project-card:hover .pc-actions{opacity:1;}
 
-/* ── HEADER ── */
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;height:52px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:100;}
+/* HEADER */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 14px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:100;}
 .logo{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.05em;white-space:nowrap;cursor:pointer;}
 .logo span{color:var(--text2);}
 .project-badge{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;transition:all .15s;}
 .project-badge:hover{border-color:var(--accent2);}
-.project-badge .pb-code{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);}
-.project-badge .pb-name{font-size:12px;color:var(--text2);}
-.project-badge .pb-arrow{font-size:10px;color:var(--text3);}
-.header-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.pb-code{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);}
+.pb-name{font-size:12px;color:var(--text2);}
+.pb-arrow{font-size:10px;color:var(--text3);}
+.header-right{display:flex;align-items:center;gap:7px;margin-left:auto;}
 .stat-pill{font-family:'DM Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;color:var(--text2);white-space:nowrap;}
 .stat-pill strong{color:var(--accent);}
 
-/* ── MAIN LAYOUT ── */
-.main{display:flex;flex:1;overflow:hidden;}
+/* MAIN LAYOUT */
+.main{display:flex;flex:1;overflow:hidden;position:relative;}
 
-/* ── SIDEBAR ── */
-.sidebar{width:300px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
-.sidebar-section{padding:12px 14px;border-bottom:1px solid var(--border);}
-.section-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--text2);text-transform:uppercase;margin-bottom:9px;}
+/* SIDEBAR */
+.sidebar{width:300px;min-width:180px;max-width:600px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;position:relative;}
+.resize-handle{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:10;background:transparent;transition:background .15s;}
+.resize-handle:hover{background:var(--accent2);}
 
-/* upload */
-.upload-row{display:flex;gap:7px;}
-.upload-zone{flex:1;border:1.5px dashed var(--border);border-radius:9px;padding:12px 6px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg);}
+/* SIDEBAR SECTIONS */
+.sidebar-section{padding:11px 13px;border-bottom:1px solid var(--border);}
+.section-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--text2);text-transform:uppercase;margin-bottom:8px;}
+
+/* UPLOAD */
+.upload-row{display:flex;gap:6px;}
+.upload-zone{flex:1;border:1.5px dashed var(--border);border-radius:9px;padding:11px 5px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg);}
 .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(245,158,11,.05);}
-.upload-zone .icon{font-size:18px;margin-bottom:5px;}
-.upload-zone p{font-size:11px;color:var(--text2);line-height:1.4;}
-.upload-zone strong{color:var(--text);font-size:11px;}
-.cam-zone{width:72px;border:1.5px dashed var(--teal);border-radius:9px;padding:12px 5px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(20,184,166,.04);flex-shrink:0;}
+.upload-zone .icon{font-size:17px;margin-bottom:4px;}
+.upload-zone p{font-size:10px;color:var(--text2);line-height:1.4;}
+.upload-zone strong{color:var(--text);font-size:10px;}
+.cam-zone{width:66px;border:1.5px dashed var(--teal);border-radius:9px;padding:11px 4px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(20,184,166,.04);flex-shrink:0;}
 .cam-zone:hover{background:rgba(20,184,166,.1);}
-.cam-zone .icon{font-size:18px;margin-bottom:5px;}
-.cam-zone p{font-size:11px;color:var(--teal);line-height:1.4;}
-#file-input,#folder-input,#camera-input{display:none;}
+.cam-zone .icon{font-size:17px;margin-bottom:4px;}
+.cam-zone p{font-size:10px;color:var(--teal);line-height:1.4;}
+#file-input,#folder-input,#camera-input,#pdf-input{display:none;}
 
-/* kategorie */
-.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px;}
-.cat-btn{padding:7px 7px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);font-size:11px;font-family:inherit;cursor:pointer;transition:all .15s;text-align:left;display:flex;align-items:center;gap:5px;}
+/* KATEGORIE */
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;}
+.cat-btn{padding:6px 6px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);font-size:11px;font-family:inherit;cursor:pointer;transition:all .15s;text-align:left;display:flex;align-items:center;gap:5px;}
 .cat-btn:hover{border-color:var(--accent2);color:var(--text);}
 .cat-btn.active{border-color:var(--accent);background:rgba(245,158,11,.1);color:var(--accent);}
 .cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
@@ -118,116 +118,143 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .sub-input:focus{outline:none;border-color:var(--accent2);}
 .sub-input::placeholder{color:var(--text3);}
 
-/* datum filtr */
-.date-list{display:flex;flex-direction:column;gap:3px;max-height:120px;overflow-y:auto;}
-.date-btn{display:flex;align-items:center;justify-content:space-between;padding:6px 9px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--text2);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s;text-align:left;width:100%;}
-.date-btn:hover{background:var(--surface2);color:var(--text);}
-.date-btn.active{background:rgba(59,130,246,.15);border-color:var(--accent2);color:var(--accent2);}
-.date-btn .count{background:var(--surface2);border-radius:10px;padding:1px 6px;font-size:10px;}
-.date-btn.active .count{background:rgba(59,130,246,.2);}
-.no-dates{font-size:11px;color:var(--text2);text-align:center;padding:10px;font-style:italic;}
-
-/* foto seznam */
-.photo-list{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:5px;}
-.photo-item{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px;border:1px solid transparent;cursor:pointer;transition:all .15s;background:var(--bg);}
+/* FOTO SEZNAM */
+.photo-list{flex:1;overflow-y:auto;padding:7px;display:flex;flex-direction:column;gap:4px;}
+.photo-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;border:1px solid transparent;cursor:pointer;transition:all .15s;background:var(--bg);}
 .photo-item:hover{border-color:var(--border);}
 .photo-item.active{border-color:var(--accent);background:rgba(245,158,11,.07);}
 .photo-item.no-gps{opacity:.5;}
-.photo-thumb{width:36px;height:36px;border-radius:5px;object-fit:cover;flex-shrink:0;background:var(--surface2);}
+.photo-thumb{width:34px;height:34px;border-radius:5px;object-fit:cover;flex-shrink:0;background:var(--surface2);}
 .photo-info{flex:1;min-width:0;}
 .photo-name{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .photo-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);margin-top:1px;}
 .gps-badge{font-size:10px;padding:2px 5px;border-radius:4px;font-family:'DM Mono',monospace;flex-shrink:0;}
 .gps-ok{background:rgba(34,197,94,.15);color:var(--green);}
 .gps-no{background:rgba(239,68,68,.1);color:var(--red);}
-.empty-list{text-align:center;padding:28px 14px;color:var(--text2);font-size:13px;}
+.empty-list{text-align:center;padding:24px 12px;color:var(--text2);font-size:13px;}
 
-/* mapa */
-#map{flex:1;}
+/* MAP */
+#map-wrap{flex:1;position:relative;overflow:hidden;}
+#map{width:100%;height:100%;}
 
-/* progress */
+/* PROGRESS */
 .progress-bar{position:fixed;top:52px;left:0;right:0;height:3px;background:var(--border);z-index:2000;display:none;}
 .progress-fill{height:100%;background:var(--accent);transition:width .15s;width:0%;}
 
-/* toast */
+/* TOAST */
 .toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 15px;font-size:13px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.4);transform:translateY(70px);opacity:0;transition:all .3s;max-width:300px;}
 .toast.show{transform:translateY(0);opacity:1;}
 .toast.warn{border-color:var(--accent);color:var(--accent);}
 .toast.ok{border-color:var(--green);color:var(--green);}
 .toast.err{border-color:var(--red);color:var(--red);}
 
+/* FILTER PANEL */
+#filter-panel{position:absolute;top:52px;right:0;width:320px;background:var(--surface);border:1px solid var(--border2);border-radius:0 0 0 12px;box-shadow:-4px 4px 24px rgba(0,0,0,.4);z-index:200;padding:16px;display:none;flex-direction:column;gap:14px;}
+#filter-panel.open{display:flex;}
+.filter-section{display:flex;flex-direction:column;gap:8px;}
+.filter-title{font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;}
+.filter-tabs{display:flex;gap:6px;}
+.filter-tab{flex:1;padding:6px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);font-size:12px;font-family:inherit;cursor:pointer;text-align:center;transition:all .15s;}
+.filter-tab.active{border-color:var(--accent2);background:rgba(59,130,246,.12);color:var(--accent2);}
+.date-range-row{display:flex;gap:8px;align-items:center;}
+.date-inp{flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:7px;padding:7px 9px;color:var(--text);font-size:12px;font-family:inherit;}
+.date-inp:focus{outline:none;border-color:var(--accent2);}
+.month-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.month-btn{padding:6px 4px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;text-align:center;transition:all .15s;}
+.month-btn:hover{border-color:var(--accent2);color:var(--text);}
+.month-btn.active{border-color:var(--accent);background:rgba(245,158,11,.1);color:var(--accent);}
+.filter-actions{display:flex;gap:8px;margin-top:4px;}
+
+/* LIGHTBOX */
+#lightbox{display:none;position:fixed;inset:0;background:rgba(5,7,14,.96);z-index:9000;flex-direction:column;align-items:center;justify-content:center;}
+#lightbox.open{display:flex;}
+#lb-img-wrap{position:relative;overflow:hidden;cursor:grab;touch-action:none;display:flex;align-items:center;justify-content:center;max-width:calc(100vw - 140px);max-height:calc(100dvh - 160px);}
+#lb-img-wrap.grabbing{cursor:grabbing;}
+#lb-img{display:block;transform-origin:center center;transition:none;border-radius:6px;box-shadow:0 16px 48px rgba(0,0,0,.8);max-width:100%;max-height:100%;}
+.lb-btn{background:rgba(255,255,255,.1);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background .15s;}
+.lb-btn:hover{background:rgba(255,255,255,.22);}
+#lb-close{position:absolute;top:14px;right:16px;width:38px;height:38px;font-size:20px;z-index:9001;}
+#lb-prev{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:46px;height:46px;font-size:26px;}
+#lb-next{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:46px;height:46px;font-size:26px;}
+#lb-zoom-bar{position:absolute;bottom:130px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(15,17,23,.7);border:1px solid var(--border);border-radius:20px;padding:5px 12px;}
+#lb-zoom-bar button{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;}
+#lb-zoom-bar button:hover{background:rgba(255,255,255,.15);}
+#lb-zoom-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);min-width:40px;text-align:center;}
+#lb-info{margin-top:12px;text-align:center;}
+#lb-name{font-size:14px;font-weight:500;color:#e8eaf0;margin-bottom:4px;font-family:'DM Sans',sans-serif;}
+#lb-meta{font-size:12px;color:#8892a4;font-family:'DM Mono',monospace;}
+#lb-note-wrap{margin-top:10px;display:flex;gap:8px;align-items:center;}
+#lb-note{background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:#e8eaf0;font-size:12px;font-family:'DM Sans',sans-serif;width:340px;resize:none;}
+#lb-note:focus{outline:none;border-color:var(--accent2);}
+#lb-note-save{padding:7px 14px;background:var(--accent2);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;}
+
+/* HOVER TOOLTIP */
+#map-tooltip{display:none;position:fixed;z-index:8000;pointer-events:none;transform:translate(-50%,-110%);}
+.tt-wrap{background:#181c27;border:1px solid #363d5e;border-radius:10px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.7);width:170px;}
+#tt-img{width:100%;height:105px;object-fit:cover;display:block;}
+.tt-body{padding:8px 9px;}
+#tt-cat{font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+#tt-name{font-size:11px;font-weight:500;color:#e8eaf0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#tt-date{font-size:10px;color:#8892a4;font-family:'DM Mono',monospace;margin-top:2px;}
+.tt-arr{width:10px;height:6px;background:#363d5e;clip-path:polygon(0 0,100% 0,50% 100%);margin:0 auto;}
+
+/* PDF OVERLAY */
+#pdf-overlay{position:absolute;inset:0;pointer-events:none;z-index:50;}
+#pdf-canvas{position:absolute;transform-origin:top left;}
+
+/* PDF PANEL */
+#pdf-panel{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:12px 16px;z-index:300;display:none;gap:12px;align-items:center;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+#pdf-panel.open{display:flex;}
+.pdf-slider-wrap{display:flex;flex-direction:column;gap:3px;}
+.pdf-slider-label{font-size:10px;color:var(--text2);font-family:'DM Mono',monospace;}
+.pdf-slider{width:120px;accent-color:var(--accent);}
+
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 
 @media(max-width:640px){
-  .sidebar{width:100%;height:46dvh;border-right:none;border-bottom:1px solid var(--border);}
+  .sidebar{width:100%;min-width:unset;max-width:unset;height:44dvh;border-right:none;border-bottom:1px solid var(--border);}
   .main{flex-direction:column;}
-  #map{height:54dvh;}
+  #map-wrap{height:56dvh;}
   .stat-pill{display:none;}
+  .resize-handle{display:none;}
 }
 </style>
 </head>
 <body>
 
-<!-- ── VÝBĚR PROJEKTU ── -->
+<!-- PROJECT SCREEN -->
 <div id="project-screen">
   <div class="ps-logo">STAVBA<span>·</span>MAPA</div>
   <div class="ps-title">Vyber projekt</div>
-  <div class="ps-sub">Každý projekt má vlastní fotky, mapu a timeline</div>
+  <div class="ps-sub">Každý projekt má vlastní fotky, mapu a výkresy</div>
   <div class="project-grid" id="project-grid"></div>
   <button class="btn btn-ghost" onclick="openNewProject()">+ Nový projekt</button>
 </div>
 
-<!-- ── MODAL: NOVÝ / EDIT PROJEKT ── -->
+<!-- PROJECT MODAL -->
 <div class="overlay hidden" id="project-overlay">
   <div class="modal">
     <div class="modal-header">
-      <div>
-        <div class="modal-title" id="modal-title">Nový projekt</div>
-        <div class="modal-sub">Vyplň základní informace o stavbě</div>
-      </div>
+      <div><div class="modal-title" id="modal-title">Nový projekt</div><div class="modal-sub">Základní informace o stavbě</div></div>
       <button class="modal-close" onclick="closeProjectModal()">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-row">
-        <div class="form-group">
-          <label>Číslo projektu *</label>
-          <input class="inp" id="f-code" placeholder="CWC1H" maxlength="20">
-        </div>
-        <div class="form-group">
-          <label>Barva projektu</label>
-          <input class="inp" id="f-color" type="color" value="#f59e0b" style="height:40px;padding:4px 8px;cursor:pointer;">
-        </div>
+        <div class="form-group"><label>Číslo projektu *</label><input class="inp" id="f-code" placeholder="CWC1H" maxlength="20"></div>
+        <div class="form-group"><label>Barva</label><input class="inp" id="f-color" type="color" value="#f59e0b" style="height:40px;padding:4px 8px;cursor:pointer;"></div>
       </div>
-      <div class="form-group full">
-        <label>Název stavby *</label>
-        <input class="inp" id="f-name" placeholder="Horní Lideč – Horní Lideč státní hranice">
+      <div class="form-group full"><label>Název stavby *</label><input class="inp" id="f-name" placeholder="Horní Lideč – státní hranice"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Datum zahájení</label><input class="inp" id="f-start" type="date"></div>
+        <div class="form-group"><label>Datum ukončení</label><input class="inp" id="f-end" type="date"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Datum zahájení</label>
-          <input class="inp" id="f-start" type="date">
-        </div>
-        <div class="form-group">
-          <label>Datum ukončení</label>
-          <input class="inp" id="f-end" type="date">
-        </div>
+        <div class="form-group"><label>Km od</label><input class="inp" id="f-km-from" placeholder="km 0.000"></div>
+        <div class="form-group"><label>Km do</label><input class="inp" id="f-km-to" placeholder="km 5.500"></div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Km staničení od</label>
-          <input class="inp" id="f-km-from" placeholder="km 0.000" type="text">
-        </div>
-        <div class="form-group">
-          <label>Km staničení do</label>
-          <input class="inp" id="f-km-to" placeholder="km 5.500" type="text">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Popis / poznámky</label>
-        <textarea class="inp" id="f-desc" placeholder="Rekonstrukce traťového svršku a spodku..."></textarea>
-      </div>
+      <div class="form-group"><label>Popis / poznámky</label><textarea class="inp" id="f-desc" placeholder="Rekonstrukce traťového svršku..."></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeProjectModal()">Zrušit</button>
@@ -236,13 +263,13 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
   </div>
 </div>
 
-<!-- ── PROGRESS ── -->
+<!-- PROGRESS -->
 <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
 
-<!-- ── HEADER (skrytý dokud není vybrán projekt) ── -->
+<!-- HEADER -->
 <header id="main-header" style="display:none">
-  <div class="logo" onclick="goHome()" title="Zpět na projekty">STAVBA<span>·</span>MAPA</div>
-  <div class="project-badge" onclick="goHome()" title="Přepnout projekt">
+  <div class="logo" onclick="goHome()">STAVBA<span>·</span>MAPA</div>
+  <div class="project-badge" onclick="goHome()">
     <span class="pb-code" id="hdr-code">—</span>
     <span class="pb-name" id="hdr-name">—</span>
     <span class="pb-arrow">▾</span>
@@ -252,30 +279,29 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
     <div class="stat-pill">GPS: <strong id="count-gps">0</strong></div>
     <button class="btn btn-ghost btn-sm" onclick="openEditProject()">✏ Projekt</button>
     <button class="btn btn-ghost btn-sm" id="btn-aerial" onclick="toggleAerial()">🛰 Letecká</button>
+    <button class="btn btn-ghost btn-sm" id="btn-filter" onclick="toggleFilter()">🔍 Filtr</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('pdf-input').click()">📄 PDF výkres</button>
     <button class="btn btn-ghost btn-sm" onclick="clearAll()">Vymazat</button>
+    <input type="file" id="pdf-input" accept="application/pdf" onchange="loadPDF(this.files[0])">
   </div>
 </header>
 
-<!-- ── MAIN APP ── -->
+<!-- MAIN APP -->
 <div class="main" id="main-app" style="display:none">
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
+    <div class="resize-handle" id="resize-handle"></div>
 
     <div class="sidebar-section">
       <div class="section-label">Přidat fotky</div>
       <div class="upload-row">
         <div class="upload-zone" id="folder-zone" onclick="document.getElementById('folder-input').click()">
-          <div class="icon">📁</div>
-          <p><strong>Celá složka</strong></p>
-          <p>nebo přetáhni</p>
+          <div class="icon">📁</div><p><strong>Složka</strong></p><p>nebo přetáhni</p>
         </div>
         <div class="upload-zone" onclick="document.getElementById('file-input').click()">
-          <div class="icon">🖼️</div>
-          <p><strong>Vybrat fotky</strong></p>
-          <p>jednotlivě</p>
+          <div class="icon">🖼️</div><p><strong>Fotky</strong></p><p>jednotlivě</p>
         </div>
         <div class="cam-zone" onclick="document.getElementById('camera-input').click()">
-          <div class="icon">📷</div>
-          <p>Fotit<br>teď</p>
+          <div class="icon">📷</div><p>Fotit<br>teď</p>
         </div>
       </div>
       <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)">
@@ -286,532 +312,687 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
     <div class="sidebar-section">
       <div class="section-label">Kategorie</div>
       <div class="cat-grid">
-        <button class="cat-btn active" data-cat="kolej" onclick="selectCat(this)">
-          <span class="cat-dot" style="background:#f59e0b"></span>Traťová kolej
-        </button>
-        <button class="cat-btn" data-cat="propustek" onclick="selectCat(this)">
-          <span class="cat-dot" style="background:#3b82f6"></span>Propustky/mosty
-        </button>
-        <button class="cat-btn" data-cat="odvodneni" onclick="selectCat(this)">
-          <span class="cat-dot" style="background:#14b8a6"></span>Odvodnění
-        </button>
-        <button class="cat-btn" data-cat="jine" onclick="selectCat(this)">
-          <span class="cat-dot" style="background:#8b5cf6"></span>Jiné
-        </button>
+        <button class="cat-btn active" data-cat="kolej" onclick="selectCat(this)"><span class="cat-dot" style="background:#f59e0b"></span>Traťová kolej</button>
+        <button class="cat-btn" data-cat="propustek" onclick="selectCat(this)"><span class="cat-dot" style="background:#3b82f6"></span>Propustky/mosty</button>
+        <button class="cat-btn" data-cat="odvodneni" onclick="selectCat(this)"><span class="cat-dot" style="background:#14b8a6"></span>Odvodnění</button>
+        <button class="cat-btn" data-cat="jine" onclick="selectCat(this)"><span class="cat-dot" style="background:#8b5cf6"></span>Jiné</button>
       </div>
       <input class="sub-input" id="sub-label" type="text" placeholder="Upřesnění (Kolej č. 1, km 12.4...)">
-    </div>
-
-    <div class="sidebar-section">
-      <div class="section-label">Filtr podle dne</div>
-      <div class="date-list" id="date-list">
-        <div class="no-dates">Nahraj fotky pro filtrování</div>
-      </div>
     </div>
 
     <div class="photo-list" id="photo-list">
       <div class="empty-list">Zatím žádné fotky.<br>Nahraj složku nebo vyfoť přímo.</div>
     </div>
-
   </div>
-  <div id="map"></div>
+
+  <div id="map-wrap">
+    <div id="map"></div>
+    <div id="pdf-overlay"><canvas id="pdf-canvas"></canvas></div>
+
+    <!-- FILTER PANEL -->
+    <div id="filter-panel">
+      <div class="filter-section">
+        <div class="filter-title">Typ filtru</div>
+        <div class="filter-tabs">
+          <button class="filter-tab active" id="ftab-day" onclick="setFilterTab('day')">Konkrétní den</button>
+          <button class="filter-tab" id="ftab-range" onclick="setFilterTab('range')">Rozsah dat</button>
+          <button class="filter-tab" id="ftab-month" onclick="setFilterTab('month')">Měsíc</button>
+        </div>
+      </div>
+
+      <!-- DEN -->
+      <div id="fmode-day" class="filter-section">
+        <div class="filter-title">Vyber den</div>
+        <input type="date" class="date-inp" id="f-day" oninput="applyFilter()">
+        <div id="day-quick" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;max-height:130px;overflow-y:auto;"></div>
+      </div>
+
+      <!-- ROZSAH -->
+      <div id="fmode-range" class="filter-section" style="display:none">
+        <div class="filter-title">Rozsah dat</div>
+        <div class="date-range-row">
+          <input type="date" class="date-inp" id="f-from" oninput="applyFilter()">
+          <span style="color:var(--text2);font-size:12px;">→</span>
+          <input type="date" class="date-inp" id="f-to" oninput="applyFilter()">
+        </div>
+      </div>
+
+      <!-- MĚSÍC -->
+      <div id="fmode-month" class="filter-section" style="display:none">
+        <div class="filter-title">Vyber měsíc</div>
+        <input type="number" class="date-inp" id="f-year" placeholder="Rok (2025)" style="margin-bottom:6px;" oninput="renderMonthGrid()">
+        <div class="month-grid" id="month-grid"></div>
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn-primary btn-sm" onclick="applyFilter()">Použít</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearFilter()">Zrušit filtr</button>
+      </div>
+    </div>
+
+    <!-- PDF PANEL -->
+    <div id="pdf-panel">
+      <div style="font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;" id="pdf-name">—</div>
+      <div class="pdf-slider-wrap">
+        <div class="pdf-slider-label">Průhlednost mapy</div>
+        <input type="range" class="pdf-slider" id="sl-map" min="0" max="100" value="100" oninput="updateOpacity()">
+      </div>
+      <div class="pdf-slider-wrap">
+        <div class="pdf-slider-label">Průhlednost výkresu</div>
+        <input type="range" class="pdf-slider" id="sl-pdf" min="0" max="100" value="70" oninput="updateOpacity()">
+      </div>
+      <div class="pdf-slider-wrap">
+        <div class="pdf-slider-label">Stránka výkresu</div>
+        <input type="range" class="pdf-slider" id="sl-page" min="1" max="1" value="1" oninput="renderPDFPage()">
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-place-pdf" onclick="startPDFPlacement()">📍 Umístit</button>
+      <button class="btn btn-danger btn-sm" onclick="removePDF()">✕</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <!-- LIGHTBOX -->
-<div id="lightbox" style="display:none;position:fixed;inset:0;background:rgba(5,7,14,.95);z-index:9000;flex-direction:column;align-items:center;justify-content:center;" onclick="closeLightbox(event)">
-  <button onclick="closeLightbox()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:22px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:9001">✕</button>
-  <button id="lb-prev" onclick="lbNav(-1);event.stopPropagation()" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.1);border:none;color:#fff;font-size:26px;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">‹</button>
-  <button id="lb-next" onclick="lbNav(1);event.stopPropagation()" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.1);border:none;color:#fff;font-size:26px;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">›</button>
-  <img id="lb-img" src="" style="max-width:calc(100vw - 140px);max-height:calc(100dvh - 130px);object-fit:contain;border-radius:8px;box-shadow:0 16px 64px rgba(0,0,0,.8);" onclick="event.stopPropagation()">
-  <div style="margin-top:14px;text-align:center;">
-    <div id="lb-name" style="font-size:14px;font-weight:500;color:#e8eaf0;margin-bottom:4px;font-family:'DM Sans',sans-serif;"></div>
-    <div id="lb-meta" style="font-size:12px;color:#8892a4;font-family:'DM Mono',monospace;"></div>
+<div id="lightbox">
+  <button class="lb-btn" id="lb-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-btn" id="lb-prev" onclick="lbNav(-1)">‹</button>
+  <button class="lb-btn" id="lb-next" onclick="lbNav(1)">›</button>
+  <div id="lb-img-wrap">
+    <img id="lb-img" src="" draggable="false">
+  </div>
+  <div id="lb-zoom-bar">
+    <button onclick="lbZoom(-0.25)">−</button>
+    <span id="lb-zoom-val">100%</span>
+    <button onclick="lbZoom(0.25)">+</button>
+    <button onclick="lbResetZoom()" title="Reset">⟳</button>
+  </div>
+  <div id="lb-info">
+    <div id="lb-name"></div>
+    <div id="lb-meta"></div>
+  </div>
+  <div id="lb-note-wrap">
+    <textarea id="lb-note" rows="2" placeholder="Přidat poznámku k fotce..."></textarea>
+    <button id="lb-note-save" onclick="saveNote()">Uložit</button>
   </div>
 </div>
 
 <!-- HOVER TOOLTIP -->
-<div id="map-tooltip" style="display:none;position:fixed;z-index:8000;pointer-events:none;transform:translate(-50%,-110%);">
-  <div style="background:#181c27;border:1px solid #363d5e;border-radius:10px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.7);width:170px;">
-    <img id="tt-img" src="" style="width:100%;height:105px;object-fit:cover;display:block;">
-    <div style="padding:8px 9px;">
-      <div id="tt-cat" style="font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;"></div>
-      <div id="tt-name" style="font-size:11px;font-weight:500;color:#e8eaf0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-      <div id="tt-date" style="font-size:10px;color:#8892a4;font-family:'DM Mono',monospace;margin-top:2px;"></div>
+<div id="map-tooltip">
+  <div class="tt-wrap">
+    <img id="tt-img" src="">
+    <div class="tt-body">
+      <div id="tt-cat"></div>
+      <div id="tt-name"></div>
+      <div id="tt-date"></div>
     </div>
   </div>
-  <div style="width:10px;height:6px;background:#363d5e;clip-path:polygon(0 0,100% 0,50% 100%);margin:0 auto;"></div>
+  <div class="tt-arr"></div>
 </div>
 
 <script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
+const MAPYCZ_API_KEY = '35EKo7UffSWvfZNmflSF28IUk0ulQvxfwNiinl81seA';
 const CAT_COLORS = {kolej:'#f59e0b',propustek:'#3b82f6',odvodneni:'#14b8a6',jine:'#8b5cf6'};
 const CAT_LABELS = {kolej:'Traťová kolej',propustek:'Propustky/mosty',odvodneni:'Odvodnění',jine:'Jiné'};
 
-// ── STATE ──────────────────────────────────────────────────────────────────────
-let projects = [];        // [{id, code, name, color, start, end, kmFrom, kmTo, desc}]
-let currentProject = null;
-let photos = [];          // aktuální projekt (jen metadata, url je blob)
-let markers = {};
-let selectedCat = 'kolej', activeDate = null;
-const MAPYCZ_API_KEY = '35EKo7UffSWvfZNmflSF28IUk0ulQvxfwNiinl81seA';
-let map, markerLayer, mapReady = false;
-let editingProjectId = null;
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let projects=[], currentProject=null, photos=[], markers={};
+let selectedCat='kolej';
+let filterMode='none'; // none | day | range | month
+let filterDay='', filterFrom='', filterTo='', filterMonth=''; // YYYY-MM
+let SMap2=null, map, markerLayer, tileBase, tileAerial, mapReady=false, isAerial=false;
+let editingProjectId=null;
+// PDF
+let pdfDoc=null, pdfCurrentPage=1, pdfPlaced=false, pdfBounds=null;
+// Lightbox
+let lbIndex=0, lbPhotos=[], lbScale=1, lbTransX=0, lbTransY=0, lbDragging=false, lbDragStart={x:0,y:0};
+// Filter tab
+let activeFilterTab='day';
 
 // ── STORAGE ───────────────────────────────────────────────────────────────────
-function saveProjects() {
-  localStorage.setItem('sm_projects', JSON.stringify(projects));
-}
-function loadProjects() {
-  try { projects = JSON.parse(localStorage.getItem('sm_projects') || '[]'); } catch { projects = []; }
-}
-function savePhotos(projectId) {
-  // Ukládáme jen metadata (bez blob url — ty jsou dočasné)
-  const meta = photos.map(p => ({...p, url: null}));
-  localStorage.setItem('sm_photos_' + projectId, JSON.stringify(meta));
-}
-function loadPhotos(projectId) {
-  try { return JSON.parse(localStorage.getItem('sm_photos_' + projectId) || '[]'); } catch { return []; }
-}
+function saveProjects(){localStorage.setItem('sm_projects',JSON.stringify(projects));}
+function loadProjects(){try{projects=JSON.parse(localStorage.getItem('sm_projects')||'[]');}catch{projects=[];}}
+function savePhotos(pid){localStorage.setItem('sm_photos_'+pid,JSON.stringify(photos.map(p=>({...p,url:null}))));}
+function loadPhotos(pid){try{return JSON.parse(localStorage.getItem('sm_photos_'+pid)||'[]');}catch{return[];}}
 
-// ── PROJEKTY ─────────────────────────────────────────────────────────────────
-function renderProjectScreen() {
-  const grid = document.getElementById('project-grid');
-  grid.innerHTML = '';
-
-  projects.forEach(p => {
-    const count = loadPhotos(p.id).length;
-    const card = document.createElement('div');
-    card.className = 'project-card';
-    card.innerHTML = `
-      <span class="pc-count">${count} fotek</span>
+// ── PROJECTS ──────────────────────────────────────────────────────────────────
+function renderProjectScreen(){
+  const grid=document.getElementById('project-grid');
+  grid.innerHTML='';
+  projects.forEach(p=>{
+    const cnt=loadPhotos(p.id).length;
+    const card=document.createElement('div');
+    card.className='project-card';
+    card.innerHTML=`<span class="pc-count">${cnt} fotek</span>
       <div class="pc-code"><span class="pc-dot" style="background:${p.color||'#f59e0b'}"></span>${p.code}</div>
       <div class="pc-name">${p.name}</div>
-      <div class="pc-meta">
-        ${p.start ? '▶ ' + p.start : ''}${p.end ? '  ■ ' + p.end : ''}<br>
-        ${p.kmFrom||p.kmTo ? '⊷ ' + (p.kmFrom||'?') + ' → ' + (p.kmTo||'?') : ''}
-      </div>
+      <div class="pc-meta">${p.start?'▶ '+p.start:''}${p.end?' ■ '+p.end:''}<br>${p.kmFrom||p.kmTo?'⊷ '+(p.kmFrom||'?')+' → '+(p.kmTo||'?'):''}</div>
       <div class="pc-actions">
         <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editProject('${p.id}')">✏</button>
         <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteProject('${p.id}')">✕</button>
       </div>`;
-    card.addEventListener('click', () => openProject(p.id));
+    card.addEventListener('click',()=>openProject(p.id));
     grid.appendChild(card);
   });
-
-  const newCard = document.createElement('div');
-  newCard.className = 'new-project-card';
-  newCard.innerHTML = '<span style="font-size:20px">+</span> Nový projekt';
-  newCard.onclick = openNewProject;
-  grid.appendChild(newCard);
+  const nc=document.createElement('div');
+  nc.className='new-project-card';
+  nc.innerHTML='<span style="font-size:20px">+</span> Nový projekt';
+  nc.onclick=openNewProject;
+  grid.appendChild(nc);
 }
 
-function openNewProject() {
-  editingProjectId = null;
-  document.getElementById('modal-title').textContent = 'Nový projekt';
-  ['f-code','f-name','f-start','f-end','f-km-from','f-km-to','f-desc'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('f-color').value = '#f59e0b';
+function openNewProject(){
+  editingProjectId=null;
+  document.getElementById('modal-title').textContent='Nový projekt';
+  ['f-code','f-name','f-start','f-end','f-km-from','f-km-to','f-desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-color').value='#f59e0b';
   document.getElementById('project-overlay').classList.remove('hidden');
 }
 
-function editProject(id) {
-  const p = projects.find(x => x.id === id);
-  if (!p) return;
-  editingProjectId = id;
-  document.getElementById('modal-title').textContent = 'Upravit projekt';
-  document.getElementById('f-code').value    = p.code  || '';
-  document.getElementById('f-name').value    = p.name  || '';
-  document.getElementById('f-color').value   = p.color || '#f59e0b';
-  document.getElementById('f-start').value   = p.start || '';
-  document.getElementById('f-end').value     = p.end   || '';
-  document.getElementById('f-km-from').value = p.kmFrom|| '';
-  document.getElementById('f-km-to').value   = p.kmTo  || '';
-  document.getElementById('f-desc').value    = p.desc  || '';
+function editProject(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  editingProjectId=id;
+  document.getElementById('modal-title').textContent='Upravit projekt';
+  document.getElementById('f-code').value=p.code||'';
+  document.getElementById('f-name').value=p.name||'';
+  document.getElementById('f-color').value=p.color||'#f59e0b';
+  document.getElementById('f-start').value=p.start||'';
+  document.getElementById('f-end').value=p.end||'';
+  document.getElementById('f-km-from').value=p.kmFrom||'';
+  document.getElementById('f-km-to').value=p.kmTo||'';
+  document.getElementById('f-desc').value=p.desc||'';
   document.getElementById('project-overlay').classList.remove('hidden');
 }
 
-function openEditProject() { if (currentProject) editProject(currentProject.id); }
+function openEditProject(){if(currentProject)editProject(currentProject.id);}
+function closeProjectModal(){document.getElementById('project-overlay').classList.add('hidden');}
 
-function closeProjectModal() {
-  document.getElementById('project-overlay').classList.add('hidden');
+function saveProject(){
+  const code=document.getElementById('f-code').value.trim();
+  const name=document.getElementById('f-name').value.trim();
+  if(!code||!name){showToast('Vyplň číslo projektu a název','warn');return;}
+  const data={code,name,color:document.getElementById('f-color').value,start:document.getElementById('f-start').value,end:document.getElementById('f-end').value,kmFrom:document.getElementById('f-km-from').value.trim(),kmTo:document.getElementById('f-km-to').value.trim(),desc:document.getElementById('f-desc').value.trim()};
+  if(editingProjectId){
+    const idx=projects.findIndex(p=>p.id===editingProjectId);
+    if(idx>=0)projects[idx]={...projects[idx],...data};
+    if(currentProject&&currentProject.id===editingProjectId){currentProject=projects[idx];updateHeader();}
+  } else {data.id='p_'+Date.now();projects.push(data);}
+  saveProjects();closeProjectModal();renderProjectScreen();showToast('✓ Projekt uložen','ok');
 }
 
-function saveProject() {
-  const code = document.getElementById('f-code').value.trim();
-  const name = document.getElementById('f-name').value.trim();
-  if (!code || !name) { showToast('Vyplň číslo projektu a název', 'warn'); return; }
-
-  const data = {
-    code, name,
-    color:  document.getElementById('f-color').value,
-    start:  document.getElementById('f-start').value,
-    end:    document.getElementById('f-end').value,
-    kmFrom: document.getElementById('f-km-from').value.trim(),
-    kmTo:   document.getElementById('f-km-to').value.trim(),
-    desc:   document.getElementById('f-desc').value.trim(),
-  };
-
-  if (editingProjectId) {
-    const idx = projects.findIndex(p => p.id === editingProjectId);
-    if (idx >= 0) projects[idx] = {...projects[idx], ...data};
-    // Pokud editujeme aktuální projekt, aktualizuj header
-    if (currentProject && currentProject.id === editingProjectId) {
-      currentProject = projects[idx];
-      updateHeader();
-    }
-  } else {
-    data.id = 'p_' + Date.now();
-    projects.push(data);
-  }
-
-  saveProjects();
-  closeProjectModal();
-  renderProjectScreen();
-  showToast('✓ Projekt uložen', 'ok');
+function deleteProject(id){
+  if(!confirm('Smazat projekt?'))return;
+  projects=projects.filter(p=>p.id!==id);
+  localStorage.removeItem('sm_photos_'+id);
+  saveProjects();renderProjectScreen();
 }
 
-function deleteProject(id) {
-  if (!confirm('Smazat projekt a všechna jeho metadata? (Soubory na disku zůstanou.)')) return;
-  projects = projects.filter(p => p.id !== id);
-  localStorage.removeItem('sm_photos_' + id);
-  saveProjects();
-  renderProjectScreen();
-}
-
-function openProject(id) {
-  const p = projects.find(x => x.id === id);
-  if (!p) return;
-  currentProject = p;
-  activeDate = null;
-
-  // Načíst metadata fotek (bez blobů — url bude null dokud uživatel znovu nenahraje)
-  const saved = loadPhotos(id);
-  photos = saved; // url=null, GPS a datum jsou uloženy
-
+function openProject(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  currentProject=p;
+  photos=loadPhotos(id);
+  filterMode='none';filterDay='';filterFrom='';filterTo='';filterMonth='';
   document.getElementById('project-screen').classList.add('hidden');
-  document.getElementById('main-header').style.display = 'flex';
-  document.getElementById('main-app').style.display = 'flex';
+  document.getElementById('main-header').style.display='flex';
+  document.getElementById('main-app').style.display='flex';
   updateHeader();
-
-  if (mapReady) {
-    refreshMarkers();
-    updateUI();
-    fitMap();
-  } else {
-    initMap().then(() => { refreshMarkers(); updateUI(); fitMap(); });
-  }
+  if(mapReady){refreshMarkers();updateUI();fitMap();}
+  else initMap().then(()=>{refreshMarkers();updateUI();fitMap();});
 }
 
-function updateHeader() {
-  document.getElementById('hdr-code').textContent = currentProject.code;
-  document.getElementById('hdr-name').textContent = currentProject.name;
+function updateHeader(){
+  document.getElementById('hdr-code').textContent=currentProject.code;
+  document.getElementById('hdr-name').textContent=currentProject.name;
 }
 
-function goHome() {
-  currentProject = null;
-  photos = [];
-  markers = {};
-  activeDate = null;
-  if (markerLayer) markerLayer.clearLayers();
-  document.getElementById('main-header').style.display = 'none';
-  document.getElementById('main-app').style.display = 'none';
+function goHome(){
+  currentProject=null;photos=[];markers={};filterMode='none';
+  if(markerLayer)markerLayer.clearLayers();
+  document.getElementById('main-header').style.display='none';
+  document.getElementById('main-app').style.display='none';
   document.getElementById('project-screen').classList.remove('hidden');
+  document.getElementById('filter-panel').classList.remove('open');
   renderProjectScreen();
 }
 
-// ── MAPY.COM + LEAFLET ───────────────────────────────────────────────────────
-let tileLayerBase, tileLayerAerial, isAerial = false;
+// ── RESIZE SIDEBAR ────────────────────────────────────────────────────────────
+(function(){
+  const handle=document.getElementById('resize-handle');
+  const sidebar=document.getElementById('sidebar');
+  let dragging=false, startX=0, startW=0;
+  handle.addEventListener('mousedown',e=>{
+    dragging=true;startX=e.clientX;startW=sidebar.offsetWidth;
+    document.body.style.userSelect='none';document.body.style.cursor='col-resize';
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const w=Math.min(600,Math.max(180,startW+(e.clientX-startX)));
+    sidebar.style.width=w+'px';
+  });
+  document.addEventListener('mouseup',()=>{
+    if(!dragging)return;dragging=false;
+    document.body.style.userSelect='';document.body.style.cursor='';
+  });
+})();
 
-async function initMap() {
-  if (mapReady) return;
-  map = L.map('map', {zoomControl:true}).setView([49.3, 18.0], 12);
-
-  tileLayerBase = L.tileLayer(
-    'https://api.mapy.com/v1/maptiles/basic/256/{z}/{x}/{y}.png?apikey=' + MAPYCZ_API_KEY,
-    { maxZoom:19, attribution:'© <a href="https://mapy.com">Mapy.com</a>' }
-  ).addTo(map);
-
-  tileLayerAerial = L.tileLayer(
-    'https://api.mapy.com/v1/maptiles/aerial/256/{z}/{x}/{y}.png?apikey=' + MAPYCZ_API_KEY,
-    { maxZoom:19, attribution:'© <a href="https://mapy.com">Mapy.com</a>' }
-  );
-
-  markerLayer = L.layerGroup().addTo(map);
-  map.on('zoomend', onZoomChange);
-  mapReady = true;
+// ── MAP ───────────────────────────────────────────────────────────────────────
+async function initMap(){
+  if(mapReady)return;
+  map=L.map('map',{zoomControl:true}).setView([49.3,18.0],12);
+  tileBase=L.tileLayer('https://api.mapy.com/v1/maptiles/basic/256/{z}/{x}/{y}.png?apikey='+MAPYCZ_API_KEY,{maxZoom:20,attribution:'© <a href="https://mapy.com">Mapy.com</a>'}).addTo(map);
+  tileAerial=L.tileLayer('https://api.mapy.com/v1/maptiles/aerial/256/{z}/{x}/{y}.png?apikey='+MAPYCZ_API_KEY,{maxZoom:20,attribution:'© <a href="https://mapy.com">Mapy.com</a>'});
+  markerLayer=L.layerGroup().addTo(map);
+  map.on('zoomend',onZoomChange);
+  map.on('moveend',updatePDFPosition);
+  map.on('zoomend',updatePDFPosition);
+  mapReady=true;
 }
 
-function toggleAerial() {
-  isAerial = !isAerial;
-  if (isAerial) {
-    map.removeLayer(tileLayerBase);
-    tileLayerAerial.addTo(map);
-    tileLayerAerial.bringToBack();
-    document.getElementById('btn-aerial').style.background = 'var(--accent)';
-    document.getElementById('btn-aerial').style.color = '#0f1117';
-  } else {
-    map.removeLayer(tileLayerAerial);
-    tileLayerBase.addTo(map);
-    tileLayerBase.bringToBack();
-    document.getElementById('btn-aerial').style.background = 'transparent';
-    document.getElementById('btn-aerial').style.color = 'var(--text2)';
-  }
+function toggleAerial(){
+  isAerial=!isAerial;
+  const btn=document.getElementById('btn-aerial');
+  if(isAerial){map.removeLayer(tileBase);tileAerial.addTo(map);tileAerial.bringToBack();btn.className='btn btn-active btn-sm';}
+  else{map.removeLayer(tileAerial);tileBase.addTo(map);tileBase.bringToBack();btn.className='btn btn-ghost btn-sm';}
+  btn.textContent='🛰 Letecká';
 }
 
 // ── DRAG & DROP ───────────────────────────────────────────────────────────────
-document.getElementById('folder-zone').addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.classList.add('drag'); });
-document.getElementById('folder-zone').addEventListener('dragleave', e => e.currentTarget.classList.remove('drag'));
-document.getElementById('folder-zone').addEventListener('drop', e => { e.preventDefault(); e.currentTarget.classList.remove('drag'); handleFiles(e.dataTransfer.files); });
+document.getElementById('folder-zone').addEventListener('dragover',e=>{e.preventDefault();e.currentTarget.classList.add('drag');});
+document.getElementById('folder-zone').addEventListener('dragleave',e=>e.currentTarget.classList.remove('drag'));
+document.getElementById('folder-zone').addEventListener('drop',e=>{e.preventDefault();e.currentTarget.classList.remove('drag');handleFiles(e.dataTransfer.files);});
 
 // ── FILE HANDLING ─────────────────────────────────────────────────────────────
-async function handleFiles(files) {
-  if (!currentProject) return;
-  const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
-  if (!arr.length) { showToast('Žádné obrázky nenalezeny', 'warn'); return; }
-
+async function handleFiles(files){
+  if(!currentProject)return;
+  const arr=Array.from(files).filter(f=>f.type.startsWith('image/'));
+  if(!arr.length){showToast('Žádné obrázky nenalezeny','warn');return;}
   showProgress(true);
-  const cat = selectedCat;
-  const sub = document.getElementById('sub-label').value.trim();
-  let added = 0, noGps = 0, skipped = 0;
-
-  for (let i = 0; i < arr.length; i++) {
-    const file = arr[i];
-    setProgress(Math.round((i / arr.length) * 100));
-    if (photos.find(p => p.name === file.name && p.size === file.size)) { skipped++; continue; }
-
-    const url  = URL.createObjectURL(file);
-    const exif = await readExif(file);
-    const gps  = exif.gps;
-
-    const photo = {
-      id: Date.now() + Math.random(),
-      name: file.name, size: file.size, url, cat, sub,
-      projectId: currentProject.id,
-      lat: gps ? gps.lat : null,
-      lng: gps ? gps.lng : null,
-      date:    exif.datetime ? formatDate(exif.datetime) : guessDateFromName(file.name),
-      timeStr: exif.datetime ? formatTime(exif.datetime) : null,
-    };
-
-    photos.push(photo);
-    added++;
-    if (!gps) noGps++;
+  const cat=selectedCat,sub=document.getElementById('sub-label').value.trim();
+  let added=0,noGps=0,skipped=0;
+  for(let i=0;i<arr.length;i++){
+    const file=arr[i];
+    setProgress(Math.round((i/arr.length)*100));
+    if(photos.find(p=>p.name===file.name&&p.size===file.size)){skipped++;continue;}
+    const url=URL.createObjectURL(file);
+    const exif=await readExif(file);
+    const gps=exif.gps;
+    photos.push({id:Date.now()+Math.random(),name:file.name,size:file.size,url,cat,sub,projectId:currentProject.id,lat:gps?gps.lat:null,lng:gps?gps.lng:null,date:exif.datetime?formatDate(exif.datetime):guessDateFromName(file.name),timeStr:exif.datetime?formatTime(exif.datetime):null,note:''});
+    added++;if(!gps)noGps++;
   }
-
-  setProgress(100);
-  setTimeout(() => showProgress(false), 400);
-  savePhotos(currentProject.id);
-  updateUI();
-  refreshMarkers();
-  fitMap();
-
-  if (!added) showToast('Všechny fotky již jsou nahrané', 'warn');
-  else if (noGps === added) showToast('⚠ Žádná fotka neobsahuje GPS. Zkontroluj povolení polohy v telefonu.', 'warn');
-  else if (noGps > 0) showToast(`✓ Přidáno ${added} fotek — ${added-noGps} na mapě, ${noGps} bez GPS`, 'ok');
-  else showToast(`✓ Přidáno ${added} fotek na mapu`, 'ok');
+  setProgress(100);setTimeout(()=>showProgress(false),400);
+  savePhotos(currentProject.id);updateUI();refreshMarkers();fitMap();
+  if(!added)showToast('Všechny fotky již jsou nahrané','warn');
+  else if(noGps===added)showToast('⚠ Žádná fotka neobsahuje GPS','warn');
+  else if(noGps>0)showToast(`✓ Přidáno ${added} fotek — ${added-noGps} na mapě, ${noGps} bez GPS`,'ok');
+  else showToast(`✓ Přidáno ${added} fotek na mapu`,'ok');
 }
 
 // ── EXIF ─────────────────────────────────────────────────────────────────────
-async function readExif(file) {
-  try {
-    const tags = ExifReader.load(await file.arrayBuffer(), {expanded:true});
-    let lat=null, lng=null, datetime=null;
-    if (tags.gps?.Latitude !== undefined && tags.gps?.Longitude !== undefined) {
-      lat = tags.gps.Latitude; lng = tags.gps.Longitude;
-      if (tags.gps.LongitudeRef?.description==='West') lng=-lng;
-      if (tags.gps.LatitudeRef?.description==='South') lat=-lat;
+async function readExif(file){
+  try{
+    const tags=ExifReader.load(await file.arrayBuffer(),{expanded:true});
+    let lat=null,lng=null,datetime=null;
+    if(tags.gps?.Latitude!==undefined&&tags.gps?.Longitude!==undefined){
+      lat=tags.gps.Latitude;lng=tags.gps.Longitude;
+      if(tags.gps.LongitudeRef?.description==='West')lng=-lng;
+      if(tags.gps.LatitudeRef?.description==='South')lat=-lat;
     }
-    const dt = tags.exif?.DateTimeOriginal?.description || tags.exif?.DateTime?.description || tags.exif?.DateTimeDigitized?.description;
-    if (dt) { const [dp,tp]=dt.split(' '); datetime=dp.replace(/:/g,'-')+(tp?'T'+tp:''); }
-    return {gps:(lat&&lng)?{lat,lng}:null, datetime};
-  } catch { return {gps:null,datetime:null}; }
+    const dt=tags.exif?.DateTimeOriginal?.description||tags.exif?.DateTime?.description||tags.exif?.DateTimeDigitized?.description;
+    if(dt){const[dp,tp]=dt.split(' ');datetime=dp.replace(/:/g,'-')+(tp?'T'+tp:'');}
+    return{gps:(lat&&lng)?{lat,lng}:null,datetime};
+  }catch{return{gps:null,datetime:null};}
 }
-
 function formatDate(s){try{const d=new Date(s);return isNaN(d)?null:d.toISOString().slice(0,10);}catch{return null;}}
 function formatTime(s){try{const d=new Date(s);return isNaN(d)?null:d.toTimeString().slice(0,5);}catch{return null;}}
 function guessDateFromName(n){const m=n.match(/(\d{4})[_\-]?(\d{2})[_\-]?(\d{2})/);return m?`${m[1]}-${m[2]}-${m[3]}`:null;}
 
-// ── MARKERY (Leaflet) ────────────────────────────────────────────────────────
-let currentZoom = 12;
-
-function dotSize(zoom) {
-  return Math.round(8 + (zoom - 8) * 1.6);
+// ── FILTER ────────────────────────────────────────────────────────────────────
+function toggleFilter(){
+  const fp=document.getElementById('filter-panel');
+  const btn=document.getElementById('btn-filter');
+  fp.classList.toggle('open');
+  btn.className=fp.classList.contains('open')?'btn btn-active btn-sm':'btn btn-ghost btn-sm';
+  btn.textContent='🔍 Filtr';
+  if(fp.classList.contains('open'))renderDayQuick();
 }
 
-function onZoomChange() {
-  const z = map.getZoom();
-  if (z !== currentZoom) { currentZoom = z; refreshMarkers(); }
-}
-
-function refreshMarkers() {
-  if (!markerLayer) return;
-  markerLayer.clearLayers();
-  Object.keys(markers).forEach(k => delete markers[k]);
-  currentZoom = map ? map.getZoom() : 12;
-  photos.filter(p => p.lat && isVisible(p)).forEach(p => buildMarker(p));
-}
-
-function buildMarker(photo) {
-  if (!map || !photo.lat) return;
-  const color = CAT_COLORS[photo.cat];
-  const size  = dotSize(currentZoom);
-  const total = size + 12;
-
-  const icon = L.divIcon({
-    className: '',
-    html: `<div style="width:${total}px;height:${total}px;display:flex;align-items:center;justify-content:center;">
-      <div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};
-        border:2.5px solid rgba(255,255,255,0.85);box-shadow:0 2px 8px rgba(0,0,0,0.5);
-        cursor:pointer;"></div></div>`,
-    iconSize: [total, total],
-    iconAnchor: [total/2, total/2]
+function setFilterTab(tab){
+  activeFilterTab=tab;
+  ['day','range','month'].forEach(t=>{
+    document.getElementById('ftab-'+t).className='filter-tab'+(t===tab?' active':'');
+    document.getElementById('fmode-'+t).style.display=t===tab?'flex':'none';
+    document.getElementById('fmode-'+t).style.flexDirection='column';
   });
+  if(tab==='month'){document.getElementById('f-year').value=new Date().getFullYear();renderMonthGrid();}
+}
 
-  const marker = L.marker([photo.lat, photo.lng], {icon});
-  marker.on('mouseover', (e) => showTooltip(photo, e.originalEvent.clientX, e.originalEvent.clientY));
-  marker.on('mousemove', (e) => moveTooltip(e.originalEvent.clientX, e.originalEvent.clientY));
-  marker.on('mouseout',  () => hideTooltip());
-  marker.on('click', () => { highlightItem(photo.id); if (photo.url) openLightbox(photo.id); });
+function renderDayQuick(){
+  const dates={};
+  photos.forEach(p=>{if(p.date)dates[p.date]=(dates[p.date]||0)+1;});
+  const sorted=Object.entries(dates).sort((a,b)=>b[0].localeCompare(a[0]));
+  document.getElementById('day-quick').innerHTML=sorted.map(([d,c])=>
+    `<button class="month-btn${filterDay===d?' active':''}" onclick="quickDay('${d}')">${d.slice(5)} <span style="opacity:.6">${c}</span></button>`
+  ).join('');
+}
 
+function quickDay(d){
+  document.getElementById('f-day').value=d;
+  applyFilter();
+}
+
+function renderMonthGrid(){
+  const year=parseInt(document.getElementById('f-year').value)||new Date().getFullYear();
+  const months=['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
+  // find which months have photos
+  const hasPh={};
+  photos.forEach(p=>{if(p.date&&p.date.startsWith(year+''))hasPh[p.date.slice(5,7)]=true;});
+  document.getElementById('month-grid').innerHTML=months.map((m,i)=>{
+    const mm=String(i+1).padStart(2,'0');
+    const key=year+'-'+mm;
+    const active=filterMonth===key;
+    const has=hasPh[mm];
+    return `<button class="month-btn${active?' active':''}${has?'':' disabled'}" style="${has?'':'opacity:.35;cursor:default'}" onclick="${has?`pickMonth('${key}')`:''}"> ${m}</button>`;
+  }).join('');
+}
+
+function pickMonth(ym){
+  filterMonth=filterMonth===ym?'':ym;
+  renderMonthGrid();applyFilter();
+}
+
+function applyFilter(){
+  if(activeFilterTab==='day'){
+    const d=document.getElementById('f-day').value;
+    filterMode=d?'day':'none';filterDay=d;
+  } else if(activeFilterTab==='range'){
+    const fr=document.getElementById('f-from').value,to=document.getElementById('f-to').value;
+    filterMode=(fr||to)?'range':'none';filterFrom=fr;filterTo=to;
+  } else {
+    filterMode=filterMonth?'month':'none';
+  }
+  updateUI();refreshMarkers();fitMap();renderDayQuick();
+}
+
+function clearFilter(){
+  filterMode='none';filterDay='';filterFrom='';filterTo='';filterMonth='';
+  document.getElementById('f-day').value='';
+  document.getElementById('f-from').value='';
+  document.getElementById('f-to').value='';
+  document.getElementById('filter-panel').classList.remove('open');
+  document.getElementById('btn-filter').className='btn btn-ghost btn-sm';
+  document.getElementById('btn-filter').textContent='🔍 Filtr';
+  updateUI();refreshMarkers();fitMap();
+}
+
+function isVisible(p){
+  if(filterMode==='none')return true;
+  if(filterMode==='day')return p.date===filterDay;
+  if(filterMode==='range'){
+    if(filterFrom&&p.date<filterFrom)return false;
+    if(filterTo&&p.date>filterTo)return false;
+    return true;
+  }
+  if(filterMode==='month')return p.date&&p.date.startsWith(filterMonth);
+  return true;
+}
+
+// ── MARKERS ───────────────────────────────────────────────────────────────────
+let currentZoom=12;
+function dotSize(z){return Math.round(8+(z-8)*1.6);}
+function onZoomChange(){const z=map.getZoom();if(z!==currentZoom){currentZoom=z;refreshMarkers();}}
+
+function refreshMarkers(){
+  if(!markerLayer)return;
+  markerLayer.clearLayers();
+  Object.keys(markers).forEach(k=>delete markers[k]);
+  currentZoom=map?map.getZoom():12;
+  photos.filter(p=>p.lat&&isVisible(p)).forEach(p=>buildMarker(p));
+}
+
+function buildMarker(photo){
+  if(!map||!photo.lat)return;
+  const color=CAT_COLORS[photo.cat];
+  const size=dotSize(currentZoom),total=size+12;
+  const icon=L.divIcon({
+    className:'',
+    html:`<div style="width:${total}px;height:${total}px;display:flex;align-items:center;justify-content:center;"><div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2.5px solid rgba(255,255,255,.85);box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:pointer;transition:transform .1s;"></div></div>`,
+    iconSize:[total,total],iconAnchor:[total/2,total/2]
+  });
+  const marker=L.marker([photo.lat,photo.lng],{icon});
+  marker.on('mouseover',e=>showTooltip(photo,e.originalEvent.clientX,e.originalEvent.clientY));
+  marker.on('mousemove',e=>moveTooltip(e.originalEvent.clientX,e.originalEvent.clientY));
+  marker.on('mouseout',()=>hideTooltip());
+  marker.on('click',()=>{highlightItem(photo.id);if(photo.url)openLightbox(photo.id);});
   markerLayer.addLayer(marker);
-  markers[photo.id] = marker;
+  markers[photo.id]=marker;
 }
 
-function fitMap() {
-  const pts = photos.filter(p => p.lat && isVisible(p));
-  if (!pts.length || !map) return;
-  if (pts.length === 1) { map.setView([pts[0].lat, pts[0].lng], 16); return; }
-  map.fitBounds(pts.map(p => [p.lat, p.lng]), {padding:[40,40], maxZoom:17});
-}
-
-// ── TOOLTIP ───────────────────────────────────────────────────────────────────
-function showTooltip(photo, x, y) {
-  const tt = document.getElementById('map-tooltip');
-  document.getElementById('tt-img').src  = photo.url || '';
-  document.getElementById('tt-img').style.display = photo.url ? 'block' : 'none';
-  document.getElementById('tt-cat').style.color = CAT_COLORS[photo.cat];
-  document.getElementById('tt-cat').textContent  = CAT_LABELS[photo.cat] + (photo.sub ? ' — ' + photo.sub : '');
-  document.getElementById('tt-name').textContent = photo.name;
-  document.getElementById('tt-date').textContent = (photo.date || '—') + (photo.timeStr ? ' ' + photo.timeStr : '');
-  tt.style.display = 'block';
-  tt.style.left = x + 'px';
-  tt.style.top  = y + 'px';
-}
-function moveTooltip(x, y) {
-  const tt = document.getElementById('map-tooltip');
-  tt.style.left = x + 'px';
-  tt.style.top  = y + 'px';
-}
-function hideTooltip() {
-  document.getElementById('map-tooltip').style.display = 'none';
-}
-
-// ── LIGHTBOX ──────────────────────────────────────────────────────────────────
-let lbIndex = 0;
-let lbPhotos = [];
-
-function openLightbox(photoId) {
-  lbPhotos = photos.filter(p => p.url && isVisible(p));
-  lbIndex  = lbPhotos.findIndex(p => String(p.id) === String(photoId));
-  if (lbIndex < 0) lbIndex = 0;
-  renderLightbox();
-  const lb = document.getElementById('lightbox');
-  lb.style.display = 'flex';
-  document.addEventListener('keydown', lbKeydown);
-}
-
-function renderLightbox() {
-  const p = lbPhotos[lbIndex];
-  if (!p) return;
-  document.getElementById('lb-img').src  = p.url;
-  document.getElementById('lb-name').textContent = p.name;
-  document.getElementById('lb-meta').textContent =
-    CAT_LABELS[p.cat] + (p.sub ? ' — ' + p.sub : '') +
-    '   📅 ' + (p.date || '—') + (p.timeStr ? ' ' + p.timeStr : '') +
-    (p.lat ? '   📍 ' + p.lat.toFixed(5) + ', ' + p.lng.toFixed(5) : '');
-  document.getElementById('lb-prev').style.opacity = lbIndex > 0 ? '1' : '0.3';
-  document.getElementById('lb-next').style.opacity = lbIndex < lbPhotos.length - 1 ? '1' : '0.3';
-}
-
-function lbNav(dir) {
-  const next = lbIndex + dir;
-  if (next < 0 || next >= lbPhotos.length) return;
-  lbIndex = next;
-  renderLightbox();
-}
-
-function closeLightbox(e) {
-  if (e && e.target !== document.getElementById('lightbox') && e.target !== document.querySelector('#lightbox > button')) return;
-  document.getElementById('lightbox').style.display = 'none';
-  document.removeEventListener('keydown', lbKeydown);
-}
-
-function lbKeydown(e) {
-  if (e.key === 'ArrowLeft')  lbNav(-1);
-  if (e.key === 'ArrowRight') lbNav(1);
-  if (e.key === 'Escape')     { document.getElementById('lightbox').style.display = 'none'; document.removeEventListener('keydown', lbKeydown); }
+function fitMap(){
+  const pts=photos.filter(p=>p.lat&&isVisible(p));
+  if(!pts.length||!map)return;
+  if(pts.length===1){map.setView([pts[0].lat,pts[0].lng],16);return;}
+  map.fitBounds(pts.map(p=>[p.lat,p.lng]),{padding:[40,40],maxZoom:17});
 }
 
 // ── UI ────────────────────────────────────────────────────────────────────────
-function isVisible(p){return !activeDate||(p.date||'Neznámé datum')===activeDate;}
-
-function updateUI() {
-  document.getElementById('count-total').textContent = photos.length;
-  document.getElementById('count-gps').textContent   = photos.filter(p=>p.lat).length;
-
-  const dates={};
-  photos.forEach(p=>{const d=p.date||'Neznámé datum';dates[d]=(dates[d]||0)+1;});
-  const dateList=document.getElementById('date-list');
-  if (!Object.keys(dates).length){
-    dateList.innerHTML='<div class="no-dates">Nahraj fotky pro filtrování</div>';
-  } else {
-    const sorted=Object.entries(dates).sort((a,b)=>b[0].localeCompare(a[0]));
-    dateList.innerHTML=`
-      <button class="date-btn ${activeDate===null?'active':''}" onclick="filterDate(null)">Vše <span class="count">${photos.length}</span></button>
-      ${sorted.map(([d,c])=>`<button class="date-btn ${activeDate===d?'active':''}" onclick="filterDate('${d}')">${d} <span class="count">${c}</span></button>`).join('')}`;
-  }
-
+function updateUI(){
+  document.getElementById('count-total').textContent=photos.length;
+  document.getElementById('count-gps').textContent=photos.filter(p=>p.lat).length;
   const visible=photos.filter(isVisible);
   const list=document.getElementById('photo-list');
-  if (!visible.length){
-    list.innerHTML=`<div class="empty-list">${photos.length?'Žádné fotky pro tento den':'Zatím žádné fotky.<br>Nahraj složku nebo vyfoť přímo.'}</div>`;
+  if(!visible.length){
+    list.innerHTML=`<div class="empty-list">${photos.length?'Žádné fotky pro tento filtr':'Zatím žádné fotky.<br>Nahraj složku nebo vyfoť přímo.'}</div>`;
   } else {
     list.innerHTML=visible.map(p=>`
       <div class="photo-item ${p.lat?'':'no-gps'}" id="item-${p.id}" onclick="focusPhoto('${p.id}')">
-        ${p.url?`<img class="photo-thumb" src="${p.url}" loading="lazy">`:`<div class="photo-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:16px">🖼️</div>`}
+        ${p.url?`<img class="photo-thumb" src="${p.url}" loading="lazy">`:`<div class="photo-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--text3)">🖼️</div>`}
         <div class="photo-info">
           <div class="photo-name">${p.name}</div>
           <div class="photo-meta">${CAT_LABELS[p.cat]}${p.sub?' · '+p.sub:''}</div>
-          <div class="photo-meta">${p.date||'—'}${p.timeStr?' '+p.timeStr:''}</div>
+          <div class="photo-meta">${p.date||'—'}${p.timeStr?' '+p.timeStr:''}${p.note?` · 💬`:''}</div>
         </div>
         <span class="gps-badge ${p.lat?'gps-ok':'gps-no'}">${p.lat?'GPS':'bez GPS'}</span>
       </div>`).join('');
   }
 }
 
-// ── INTERAKCE ────────────────────────────────────────────────────────────────
 function selectCat(btn){document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');selectedCat=btn.dataset.cat;}
-function filterDate(d){activeDate=d;updateUI();refreshMarkers();fitMap();}
+
 function focusPhoto(id){
   const p=photos.find(x=>String(x.id)===String(id));if(!p)return;
   highlightItem(p.id);
-  if(p.lat&&map){map.setView([p.lat,p.lng],17);}
-  if(p.url) openLightbox(p.id);
+  if(p.lat&&map)map.setView([p.lat,p.lng],17);
+  if(p.url)openLightbox(p.id);
 }
+
 function highlightItem(id){
   document.querySelectorAll('.photo-item').forEach(el=>el.classList.remove('active'));
   const el=document.getElementById('item-'+id);
   if(el){el.classList.add('active');el.scrollIntoView({block:'nearest'});}
 }
+
 function clearAll(){
   if(!photos.length)return;
   if(!confirm('Vymazat všechny fotky z tohoto projektu?'))return;
   photos.forEach(p=>p.url&&URL.revokeObjectURL(p.url));
-  photos=[];markers={};activeDate=null;
+  photos=[];markers={};filterMode='none';
   if(markerLayer)markerLayer.clearLayers();
   if(currentProject)savePhotos(currentProject.id);
   updateUI();
+}
+
+// ── TOOLTIP ───────────────────────────────────────────────────────────────────
+function showTooltip(photo,x,y){
+  const tt=document.getElementById('map-tooltip');
+  const img=document.getElementById('tt-img');
+  img.src=photo.url||'';img.style.display=photo.url?'block':'none';
+  document.getElementById('tt-cat').style.color=CAT_COLORS[photo.cat];
+  document.getElementById('tt-cat').textContent=CAT_LABELS[photo.cat]+(photo.sub?' — '+photo.sub:'');
+  document.getElementById('tt-name').textContent=photo.name;
+  document.getElementById('tt-date').textContent=(photo.date||'—')+(photo.timeStr?' '+photo.timeStr:'');
+  tt.style.display='block';tt.style.left=x+'px';tt.style.top=y+'px';
+}
+function moveTooltip(x,y){const tt=document.getElementById('map-tooltip');tt.style.left=x+'px';tt.style.top=y+'px';}
+function hideTooltip(){document.getElementById('map-tooltip').style.display='none';}
+
+// ── LIGHTBOX ──────────────────────────────────────────────────────────────────
+function openLightbox(photoId){
+  lbPhotos=photos.filter(p=>p.url&&isVisible(p));
+  lbIndex=lbPhotos.findIndex(p=>String(p.id)===String(photoId));
+  if(lbIndex<0)lbIndex=0;
+  lbResetZoom();
+  renderLightbox();
+  document.getElementById('lightbox').classList.add('open');
+  document.addEventListener('keydown',lbKeydown);
+}
+
+function renderLightbox(){
+  const p=lbPhotos[lbIndex];if(!p)return;
+  document.getElementById('lb-img').src=p.url;
+  document.getElementById('lb-name').textContent=p.name;
+  document.getElementById('lb-meta').textContent=CAT_LABELS[p.cat]+(p.sub?' — '+p.sub:'')+'   📅 '+(p.date||'—')+(p.timeStr?' '+p.timeStr:'')+(p.lat?'   📍 '+p.lat.toFixed(5)+', '+p.lng.toFixed(5):'');
+  document.getElementById('lb-note').value=p.note||'';
+  document.getElementById('lb-prev').style.opacity=lbIndex>0?'1':'0.3';
+  document.getElementById('lb-next').style.opacity=lbIndex<lbPhotos.length-1?'1':'0.3';
+  lbResetZoom();
+}
+
+function lbNav(dir){
+  const next=lbIndex+dir;
+  if(next<0||next>=lbPhotos.length)return;
+  lbIndex=next;renderLightbox();
+}
+
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('open');
+  document.removeEventListener('keydown',lbKeydown);
+}
+
+function lbKeydown(e){
+  if(e.key==='ArrowLeft')lbNav(-1);
+  if(e.key==='ArrowRight')lbNav(1);
+  if(e.key==='Escape')closeLightbox();
+  if(e.key==='+'||e.key==='=')lbZoom(0.25);
+  if(e.key==='-')lbZoom(-0.25);
+}
+
+// ZOOM
+function lbZoom(delta){
+  lbScale=Math.min(5,Math.max(0.25,lbScale+delta));
+  applyLbTransform();
+  document.getElementById('lb-zoom-val').textContent=Math.round(lbScale*100)+'%';
+}
+function lbResetZoom(){lbScale=1;lbTransX=0;lbTransY=0;applyLbTransform();document.getElementById('lb-zoom-val').textContent='100%';}
+function applyLbTransform(){document.getElementById('lb-img').style.transform=`scale(${lbScale}) translate(${lbTransX}px,${lbTransY}px)`;}
+
+// Scroll to zoom
+document.getElementById('lb-img-wrap').addEventListener('wheel',e=>{
+  e.preventDefault();
+  lbZoom(e.deltaY<0?0.15:-0.15);
+},{passive:false});
+
+// Drag to pan
+const lbWrap=document.getElementById('lb-img-wrap');
+lbWrap.addEventListener('mousedown',e=>{if(lbScale<=1)return;lbDragging=true;lbDragStart={x:e.clientX-lbTransX*lbScale,y:e.clientY-lbTransY*lbScale};lbWrap.classList.add('grabbing');});
+document.addEventListener('mousemove',e=>{if(!lbDragging)return;lbTransX=(e.clientX-lbDragStart.x)/lbScale;lbTransY=(e.clientY-lbDragStart.y)/lbScale;applyLbTransform();});
+document.addEventListener('mouseup',()=>{lbDragging=false;lbWrap.classList.remove('grabbing');});
+
+// Close on backdrop
+document.getElementById('lightbox').addEventListener('click',e=>{if(e.target===document.getElementById('lightbox'))closeLightbox();});
+
+// Note
+function saveNote(){
+  const p=lbPhotos[lbIndex];if(!p)return;
+  const note=document.getElementById('lb-note').value.trim();
+  const orig=photos.find(x=>String(x.id)===String(p.id));
+  if(orig){orig.note=note;p.note=note;}
+  savePhotos(currentProject.id);
+  updateUI();
+  showToast('✓ Poznámka uložena','ok');
+}
+
+// ── PDF ───────────────────────────────────────────────────────────────────────
+async function loadPDF(file){
+  if(!file)return;
+  const buf=await file.arrayBuffer();
+  pdfDoc=await pdfjsLib.getDocument({data:buf}).promise;
+  document.getElementById('sl-page').max=pdfDoc.numPages;
+  document.getElementById('sl-page').value=1;
+  document.getElementById('pdf-name').textContent=file.name;
+  pdfCurrentPage=1;
+  document.getElementById('pdf-panel').classList.add('open');
+  await renderPDFPage();
+  showToast('✓ PDF načteno — klikni "Umístit" pro přiložení na mapu','ok');
+}
+
+async function renderPDFPage(){
+  if(!pdfDoc)return;
+  pdfCurrentPage=parseInt(document.getElementById('sl-page').value)||1;
+  const page=await pdfDoc.getPage(pdfCurrentPage);
+  const vp=page.getViewport({scale:2});
+  const canvas=document.getElementById('pdf-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=vp.width;canvas.height=vp.height;
+  await page.render({canvasContext:ctx,viewport:vp}).promise;
+  updateOpacity();
+  if(pdfBounds)updatePDFPosition();
+}
+
+function updateOpacity(){
+  const mapOp=document.getElementById('sl-map').value/100;
+  const pdfOp=document.getElementById('sl-pdf').value/100;
+  document.querySelectorAll('.leaflet-tile-pane').forEach(el=>el.style.opacity=mapOp);
+  document.getElementById('pdf-canvas').style.opacity=pdfOp;
+}
+
+function removePDF(){
+  pdfDoc=null;pdfBounds=null;pdfPlaced=false;
+  const canvas=document.getElementById('pdf-canvas');
+  canvas.style.display='none';
+  document.getElementById('pdf-panel').classList.remove('open');
+  document.getElementById('sl-map').value=100;updateOpacity();
+}
+
+// PDF PLACEMENT — klik na mapu
+let pdfPlacing=false, pdfPoint1=null;
+
+function startPDFPlacement(){
+  if(!pdfDoc){showToast('Nejdřív nahraj PDF výkres','warn');return;}
+  pdfPlacing=true;pdfPoint1=null;
+  showToast('Klikni na mapu — bod kde chceš umístit roh výkresu','ok');
+  map.getContainer().style.cursor='crosshair';
+  map.once('click',onPDFClick1);
+}
+
+function onPDFClick1(e){
+  pdfPoint1=e.latlng;
+  showToast('Skvěle! Klikni na druhý bod (opačný roh výkresu na mapě)','ok');
+  map.once('click',onPDFClick2);
+}
+
+function onPDFClick2(e){
+  const p2=e.latlng;
+  pdfBounds=L.latLngBounds(pdfPoint1,p2);
+  pdfPlaced=true;
+  map.getContainer().style.cursor='';
+  pdfPlacing=false;
+  updatePDFPosition();
+  document.getElementById('pdf-canvas').style.display='block';
+  document.getElementById('btn-place-pdf').textContent='📍 Přemístit';
+  showToast('✓ Výkres umístěn — táhni slidery pro průhlednost','ok');
+}
+
+function updatePDFPosition(){
+  if(!pdfBounds||!map||!pdfPlaced)return;
+  const canvas=document.getElementById('pdf-canvas');
+  const tl=map.latLngToContainerPoint(pdfBounds.getNorthWest());
+  const br=map.latLngToContainerPoint(pdfBounds.getSouthEast());
+  canvas.style.left=tl.x+'px';
+  canvas.style.top=tl.y+'px';
+  canvas.style.width=(br.x-tl.x)+'px';
+  canvas.style.height=(br.y-tl.y)+'px';
 }
 
 // ── PROGRESS & TOAST ─────────────────────────────────────────────────────────
@@ -820,12 +1001,13 @@ function setProgress(p){document.getElementById('progress-fill').style.width=p+'
 function showToast(msg,type=''){
   const t=document.getElementById('toast');
   t.textContent=msg;t.className='toast '+type+' show';
-  setTimeout(()=>t.classList.remove('show'),4500);
+  clearTimeout(t._to);t._to=setTimeout(()=>t.classList.remove('show'),4500);
 }
 
-// ── INIT ─────────────────────────────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────────────────────────
 loadProjects();
 renderProjectScreen();
+setFilterTab('day');
 </script>
 </body>
 </html>
