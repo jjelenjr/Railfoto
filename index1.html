@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stavba Foto-Mapa</title>
 <script src="https://cdn.jsdelivr.net/npm/exifreader@4.14.1/dist/exif-reader.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://api.mapy.cz/loader.js"></script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -354,7 +353,8 @@ let currentProject = null;
 let photos = [];          // aktuální projekt (jen metadata, url je blob)
 let markers = {};
 let selectedCat = 'kolej', activeDate = null;
-let map, markerLayer, mapReady = false;
+const MAPYCZ_API_KEY = '35EKo7UffSWvfZNmflSF28IUk0ulQvxfwNiinl81seA';
+let SMap, JAK, map, markerLayer, mapReady = false;
 let editingProjectId = null;
 
 // ── STORAGE ───────────────────────────────────────────────────────────────────
@@ -511,24 +511,38 @@ function goHome() {
   photos = [];
   markers = {};
   activeDate = null;
-  if (markerLayer) markerLayer.clearLayers();
+  if (markerLayer) markerLayer.removeAll();
   document.getElementById('main-header').style.display = 'none';
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('project-screen').classList.remove('hidden');
   renderProjectScreen();
 }
 
-// ── LEAFLET MAP ───────────────────────────────────────────────────────────────
+// ── MAPY.CZ SDK ───────────────────────────────────────────────────────────────
 async function initMap() {
   if (mapReady) return;
-  map = L.map('map', {zoomControl:true}).setView([49.3, 18.0], 12);
-  L.tileLayer('https://mapserver.mapy.cz/base-m/{z}-{x}-{y}', {
-    attribution:'© <a href="https://mapy.cz">Mapy.cz</a> © <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    maxZoom:20
-  }).addTo(map);
-  markerLayer = L.layerGroup().addTo(map);
-  map.on('zoomend', onZoomChange);
-  mapReady = true;
+  try {
+    await Loader.load(MAPYCZ_API_KEY, {suggest:false, pano:false});
+    SMap = window.SMap; JAK = window.JAK;
+    if (!SMap) throw new Error('SMap se nenačetl');
+    const center = SMap.Coords.fromWGS84(18.0, 49.3);
+    map = new SMap(JAK.gel('map'), center, 12);
+    map.addDefaultLayer(SMap.DEF_BASE).enable();
+    map.addDefaultControls();
+    markerLayer = new SMap.Layer.Marker();
+    map.addLayer(markerLayer);
+    markerLayer.enable();
+    try { map.getSignals().addListener(window, 'zoom-stop', onZoomChange); } catch(e) {}
+    mapReady = true;
+  } catch(err) {
+    document.getElementById('map').innerHTML =
+      `<div style="padding:32px;color:#ef4444;font-family:monospace;font-size:13px;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;">
+        <div style="font-size:32px">🗺️</div>
+        <div><strong>Mapa se nenačetla: ${err.message}</strong></div>
+        <div style="color:#8892a4;font-size:12px;text-align:center">Ověř že je doména <b>jjelenjr.github.io</b> přidána v Mapy.cz API klíči jako Referer</div>
+        <button onclick="location.reload()" style="padding:8px 18px;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">Znovu načíst</button>
+      </div>`;
+  }
 }
 
 // ── DRAG & DROP ───────────────────────────────────────────────────────────────
@@ -604,7 +618,7 @@ function formatDate(s){try{const d=new Date(s);return isNaN(d)?null:d.toISOStrin
 function formatTime(s){try{const d=new Date(s);return isNaN(d)?null:d.toTimeString().slice(0,5);}catch{return null;}}
 function guessDateFromName(n){const m=n.match(/(\d{4})[_\-]?(\d{2})[_\-]?(\d{2})/);return m?`${m[1]}-${m[2]}-${m[3]}`:null;}
 
-// ── MARKERY (Leaflet) ─────────────────────────────────────────────────────────
+// ── MARKERY (Mapy.cz) ────────────────────────────────────────────────────────
 let currentZoom = 12;
 
 function dotSize(zoom) {
@@ -618,48 +632,49 @@ function onZoomChange() {
 
 function refreshMarkers() {
   if (!markerLayer) return;
-  markerLayer.clearLayers();
+  markerLayer.removeAll();
   Object.keys(markers).forEach(k => delete markers[k]);
   currentZoom = map ? map.getZoom() : 12;
   photos.filter(p => p.lat && isVisible(p)).forEach(p => buildMarker(p));
 }
 
 function buildMarker(photo) {
-  if (!map || !photo.lat) return;
+  if (!SMap || !photo.lat) return;
   const color = CAT_COLORS[photo.cat];
   const size  = dotSize(currentZoom);
   const total = size + 12;
-
-  const icon = L.divIcon({
-    className: '',
-    html: `<div style="width:${total}px;height:${total}px;display:flex;align-items:center;justify-content:center;">
-      <div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};
-        border:2.5px solid rgba(255,255,255,0.85);box-shadow:0 2px 8px rgba(0,0,0,0.5);
-        cursor:pointer;transition:transform .15s;"></div>
-    </div>`,
-    iconSize: [total, total],
-    iconAnchor: [total/2, total/2]
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${total}" height="${total}" viewBox="0 0 ${total} ${total}">
+    <circle cx="${total/2}" cy="${total/2}" r="${size/2+2}" fill="rgba(255,255,255,0.85)"/>
+    <circle cx="${total/2}" cy="${total/2}" r="${size/2}" fill="${color}"/>
+  </svg>`;
+  const iconUrl = URL.createObjectURL(new Blob([svg], {type:'image/svg+xml'}));
+  const coords  = SMap.Coords.fromWGS84(photo.lng, photo.lat);
+  const marker  = new SMap.Marker(coords, String(photo.id), {
+    url: iconUrl, width: total, height: total,
+    anchor: {left: Math.round(total/2), bottom: Math.round(total/2)}
   });
 
-  const marker = L.marker([photo.lat, photo.lng], {icon});
+  const el = marker.getContainer();
+  el.style.cursor = 'pointer';
+  el.addEventListener('mouseenter', (e) => showTooltip(photo, e.clientX, e.clientY));
+  el.addEventListener('mousemove',  (e) => moveTooltip(e.clientX, e.clientY));
+  el.addEventListener('mouseleave', () => hideTooltip());
+  el.addEventListener('click', () => { highlightItem(photo.id); if (photo.url) openLightbox(photo.id); });
 
-  marker.on('mouseover', (e) => showTooltip(photo, e.originalEvent.clientX, e.originalEvent.clientY));
-  marker.on('mousemove', (e) => moveTooltip(e.originalEvent.clientX, e.originalEvent.clientY));
-  marker.on('mouseout',  () => hideTooltip());
-  marker.on('click', () => {
-    highlightItem(photo.id);
-    if (photo.url) openLightbox(photo.id);
-  });
-
-  markerLayer.addLayer(marker);
+  markerLayer.addMarker(marker);
   markers[photo.id] = marker;
 }
 
 function fitMap() {
   const pts = photos.filter(p => p.lat && isVisible(p));
-  if (!pts.length || !map) return;
-  if (pts.length === 1) { map.setView([pts[0].lat, pts[0].lng], 16); return; }
-  map.fitBounds(pts.map(p => [p.lat, p.lng]), {padding:[40,40], maxZoom:17});
+  if (!pts.length || !SMap) return;
+  if (pts.length === 1) {
+    map.setCenter(SMap.Coords.fromWGS84(pts[0].lng, pts[0].lat));
+    map.setZoom(16); return;
+  }
+  const cz = SMap.Coords.coordsToCenter(pts.map(p => SMap.Coords.fromWGS84(p.lng, p.lat)));
+  map.setCenter(cz.center);
+  map.setZoom(Math.max((cz.zoom || 14) - 1, 8));
 }
 
 // ── TOOLTIP ───────────────────────────────────────────────────────────────────
@@ -773,7 +788,7 @@ function filterDate(d){activeDate=d;updateUI();refreshMarkers();fitMap();}
 function focusPhoto(id){
   const p=photos.find(x=>String(x.id)===String(id));if(!p)return;
   highlightItem(p.id);
-  if(p.lat&&map){map.setView([p.lat,p.lng],17);}
+  if(p.lat&&SMap){map.setCenter(SMap.Coords.fromWGS84(p.lng,p.lat));map.setZoom(17);}
   if(p.url) openLightbox(p.id);
 }
 function highlightItem(id){
@@ -786,7 +801,7 @@ function clearAll(){
   if(!confirm('Vymazat všechny fotky z tohoto projektu?'))return;
   photos.forEach(p=>p.url&&URL.revokeObjectURL(p.url));
   photos=[];markers={};activeDate=null;
-  if(markerLayer)markerLayer.clearLayers();
+  if(markerLayer)markerLayer.removeAll();
   if(currentProject)savePhotos(currentProject.id);
   updateUI();
 }
