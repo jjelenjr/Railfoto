@@ -225,6 +225,9 @@ body:has(#pdf-panel.open) .progress-bar{top:96px;}
 .pdf-toggle-btn{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);font-family:inherit;transition:all .15s;}
 .pdf-toggle-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(245,158,11,.1);}
 .pdf-toggle-btn:hover{border-color:var(--accent2);color:var(--text);}
+.pdf-step{font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);}
+.pdf-step.active{color:var(--accent);border-color:var(--accent);background:rgba(245,158,11,.1);}
+.pdf-step.done{color:var(--green);border-color:var(--green);background:rgba(34,197,94,.1);}
 
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -369,6 +372,53 @@ body:has(#pdf-panel.open) .progress-bar{top:96px;}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- PDF PLACEMENT MODAL -->
+<div class="overlay hidden" id="pdf-placement-overlay">
+  <div class="modal" style="width:min(700px,96vw);max-height:92dvh;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="pdf-modal-title">Umístit výkres na mapu</div>
+        <div class="modal-sub" id="pdf-modal-sub">Klikni na výkres — vyber referenční bod (např. křížení tratí)</div>
+      </div>
+      <button class="modal-close" onclick="cancelPDFPlacement()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:10px;">
+      <!-- Krok indikátor -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
+        <div class="pdf-step active" id="pstep-1">1. Referenční bod</div>
+        <div style="color:var(--text3);font-size:12px;">→</div>
+        <div class="pdf-step" id="pstep-2">2. Šipka severu</div>
+        <div style="color:var(--text3);font-size:12px;">→</div>
+        <div class="pdf-step" id="pstep-3">3. Měřítko</div>
+        <div style="color:var(--text3);font-size:12px;">→</div>
+        <div class="pdf-step" id="pstep-4">4. Bod na mapě</div>
+      </div>
+      <!-- PDF náhled s crosshair -->
+      <div id="pdf-preview-wrap" style="position:relative;overflow:hidden;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);cursor:crosshair;user-select:none;">
+        <canvas id="pdf-preview-canvas" style="display:block;max-width:100%;max-height:420px;"></canvas>
+        <!-- Kliknuté body -->
+        <div id="pdf-refpt" style="display:none;position:absolute;width:16px;height:16px;background:#ef4444;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>
+        <div id="pdf-northpt" style="display:none;position:absolute;width:16px;height:16px;background:#3b82f6;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>
+        <div id="pdf-north-line" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
+      </div>
+      <!-- Měřítko vstup (krok 3) -->
+      <div id="pdf-scale-row" style="display:none;flex-direction:column;gap:8px;">
+        <div style="font-size:13px;color:var(--text);">Zadej měřítko výkresu:</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:14px;color:var(--text2);">1 :</span>
+          <input class="inp" id="pdf-scale-input" type="number" value="500" min="1" max="100000" placeholder="500" style="width:120px;">
+          <span style="font-size:12px;color:var(--text2);">( 1:500 = každý cm výkresu = 5m ve skutečnosti )</span>
+        </div>
+        <div id="pdf-scale-info" style="font-size:11px;color:var(--teal);font-family:'DM Mono',monospace;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cancelPDFPlacement()">Zrušit</button>
+      <button class="btn btn-primary" id="pdf-next-btn" onclick="pdfPlacementNext()" style="display:none;">Dále →</button>
+    </div>
+  </div>
+</div>
 
 <!-- LIGHTBOX -->
 <div id="lightbox">
@@ -966,8 +1016,17 @@ function saveNote(){
 }
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
-let pdfAspectRatio=1; // šířka/výška originálu
-let pdfVisible=true;
+let pdfAspectRatio=1, pdfVisible=true;
+let pdfCanvasW=0, pdfCanvasH=0;
+// Placement state
+let pdfStep=0;
+let pdfRefPt=null;   // {x,y} procenta na výkresu
+let pdfNorthPt=null; // {x,y} procenta na výkresu
+let pdfScale=500;
+let pdfPlaced=false;
+let pdfMapRef=null;  // L.LatLng
+let pdfRotation=0;   // stupně
+let pdfMetersPerPx=1;
 
 async function loadPDF(file){
   if(!file)return;
@@ -976,15 +1035,13 @@ async function loadPDF(file){
   document.getElementById('sl-page').max=pdfDoc.numPages;
   document.getElementById('sl-page').value=1;
   document.getElementById('pdf-name').textContent=file.name;
-  pdfCurrentPage=1;
-  pdfVisible=true;
+  pdfCurrentPage=1; pdfVisible=true;
   document.getElementById('btn-pdf-toggle').className='pdf-toggle-btn on';
   document.getElementById('btn-pdf-toggle').textContent='👁 Výkres zap';
   document.getElementById('pdf-panel').classList.add('open');
-  // Posuň mapu dolů aby panel nepřekrýval obsah
   document.getElementById('main-app').style.marginTop='44px';
   await renderPDFPage();
-  showToast('✓ PDF načteno — klikni "Umístit" pro přiložení na mapu','ok');
+  showToast('✓ PDF načteno — klikni "Umístit" pro umístění na mapu','ok');
 }
 
 async function renderPDFPage(){
@@ -992,29 +1049,29 @@ async function renderPDFPage(){
   pdfCurrentPage=parseInt(document.getElementById('sl-page').value)||1;
   const page=await pdfDoc.getPage(pdfCurrentPage);
   const vp=page.getViewport({scale:2});
-  // Ulož poměr stran originálu
   pdfAspectRatio=vp.width/vp.height;
+  pdfCanvasW=vp.width; pdfCanvasH=vp.height;
   const canvas=document.getElementById('pdf-canvas');
-  const ctx=canvas.getContext('2d');
-  canvas.width=vp.width;canvas.height=vp.height;
-  await page.render({canvasContext:ctx,viewport:vp}).promise;
+  canvas.width=vp.width; canvas.height=vp.height;
+  await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+  const prev=document.getElementById('pdf-preview-canvas');
+  if(prev&&prev.offsetParent!==null){
+    prev.width=vp.width; prev.height=vp.height;
+    await page.render({canvasContext:prev.getContext('2d'),viewport:vp}).promise;
+  }
   updateOpacity();
-  if(pdfBounds&&pdfPlaced)updatePDFPosition();
+  if(pdfPlaced)renderPDFOnMap();
 }
 
 function togglePDFVisible(){
   pdfVisible=!pdfVisible;
   const btn=document.getElementById('btn-pdf-toggle');
-  const canvas=document.getElementById('pdf-canvas');
   if(pdfVisible){
-    btn.className='pdf-toggle-btn on';
-    btn.textContent='👁 Výkres zap';
-    canvas.style.display=pdfPlaced?'block':'none';
-    updateOpacity();
+    btn.className='pdf-toggle-btn on'; btn.textContent='👁 Výkres zap';
+    if(pdfPlaced)renderPDFOnMap(); updateOpacity();
   } else {
-    btn.className='pdf-toggle-btn';
-    btn.textContent='🙈 Výkres vyp';
-    canvas.style.display='none';
+    btn.className='pdf-toggle-btn'; btn.textContent='🙈 Výkres vyp';
+    document.getElementById('pdf-canvas').style.display='none';
   }
 }
 
@@ -1027,71 +1084,156 @@ function updateOpacity(){
 }
 
 function removePDF(){
-  pdfDoc=null;pdfBounds=null;pdfPlaced=false;pdfVisible=true;
-  const canvas=document.getElementById('pdf-canvas');
-  canvas.style.display='none';
+  pdfDoc=null; pdfPlaced=false; pdfVisible=true; pdfStep=0;
+  pdfRefPt=null; pdfNorthPt=null; pdfMapRef=null;
+  document.getElementById('pdf-canvas').style.display='none';
   document.getElementById('pdf-panel').classList.remove('open');
   document.getElementById('main-app').style.marginTop='0';
   document.getElementById('sl-map').value=100;
   document.querySelectorAll('.leaflet-tile-pane').forEach(el=>el.style.opacity=1);
 }
 
-// PDF PLACEMENT — zachování poměru stran
-let pdfPlacing=false, pdfPoint1=null;
-
+// ── PDF PLACEMENT MODAL ───────────────────────────────────────────────────────
 function startPDFPlacement(){
   if(!pdfDoc){showToast('Nejdřív nahraj PDF výkres','warn');return;}
-  pdfPlacing=true;pdfPoint1=null;
-  showToast('Klikni na mapu — levý horní roh výkresu','ok');
+  pdfStep=1; pdfRefPt=null; pdfNorthPt=null;
+  document.getElementById('pdf-refpt').style.display='none';
+  document.getElementById('pdf-northpt').style.display='none';
+  const svg=document.getElementById('pdf-north-svg');
+  if(svg)svg.innerHTML='';
+  document.getElementById('pdf-placement-overlay').classList.remove('hidden');
+  setPdfStep(1);
+  const prev=document.getElementById('pdf-preview-canvas');
+  prev.onclick=onPdfPreviewClick;
+  renderPDFPage();
+}
+
+function setPdfStep(step){
+  pdfStep=step;
+  const titles={
+    1:'Klikni na výkres — vyber referenční bod (křížení, roh budovy...)',
+    2:'Klikni na šipku SEVERU na výkresu',
+    3:'Zadej měřítko výkresu a klikni Dále',
+    4:'Klikni na stejný referenční bod na mapě'
+  };
+  document.getElementById('pdf-modal-title').textContent='Umístit výkres — krok '+step+' / 4';
+  document.getElementById('pdf-modal-sub').textContent=titles[step]||'';
+  [1,2,3,4].forEach(i=>{
+    const el=document.getElementById('pstep-'+i);
+    if(el)el.className='pdf-step'+(i<step?' done':i===step?' active':'');
+  });
+  document.getElementById('pdf-scale-row').style.display=step===3?'flex':'none';
+  document.getElementById('pdf-next-btn').style.display=step===3?'inline-flex':'none';
+}
+
+function onPdfPreviewClick(e){
+  const prev=document.getElementById('pdf-preview-canvas');
+  const rect=prev.getBoundingClientRect();
+  const xPct=(e.clientX-rect.left)/rect.width;
+  const yPct=(e.clientY-rect.top)/rect.height;
+  if(pdfStep===1){
+    pdfRefPt={x:xPct,y:yPct};
+    const dot=document.getElementById('pdf-refpt');
+    dot.style.left=(xPct*100)+'%'; dot.style.top=(yPct*100)+'%'; dot.style.display='block';
+    setPdfStep(2);
+  } else if(pdfStep===2){
+    pdfNorthPt={x:xPct,y:yPct};
+    const dot=document.getElementById('pdf-northpt');
+    dot.style.left=(xPct*100)+'%'; dot.style.top=(yPct*100)+'%'; dot.style.display='block';
+    drawNorthLine();
+    setPdfStep(3);
+    document.getElementById('pdf-scale-input').value='500';
+  }
+}
+
+function drawNorthLine(){
+  let svg=document.getElementById('pdf-north-svg');
+  if(!svg){
+    svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.id='pdf-north-svg';
+    svg.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+    document.getElementById('pdf-preview-wrap').appendChild(svg);
+  }
+  const x1=pdfRefPt.x*100, y1=pdfRefPt.y*100;
+  const x2=pdfNorthPt.x*100, y2=pdfNorthPt.y*100;
+  svg.innerHTML=`<line x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6 3" opacity="0.85"/>
+    <circle cx="${x1}%" cy="${y1}%" r="5" fill="#ef4444" stroke="white" stroke-width="1.5"/>
+    <circle cx="${x2}%" cy="${y2}%" r="5" fill="#3b82f6" stroke="white" stroke-width="1.5"/>
+    <text x="${x2}%" y="${y2}%" dy="-10" text-anchor="middle" font-size="13" fill="#3b82f6" font-weight="bold" font-family="DM Mono,monospace">N</text>`;
+}
+
+function pdfPlacementNext(){
+  const scaleVal=parseInt(document.getElementById('pdf-scale-input').value);
+  if(!scaleVal||scaleVal<1){showToast('Zadej platné měřítko','warn');return;}
+  pdfScale=scaleVal;
+  const mmPerPx=25.4/144;
+  pdfMetersPerPx=(mmPerPx/1000)*pdfScale;
+  document.getElementById('pdf-placement-overlay').classList.add('hidden');
+  setPdfStep(4);
+  showToast('Klikni na mapě — stejný referenční bod jako na výkresu','ok');
   map.getContainer().style.cursor='crosshair';
-  map.once('click',onPDFClick1);
+  map.once('click',onPdfMapClick);
 }
 
-function onPDFClick1(e){
-  pdfPoint1=e.latlng;
-  showToast('Teď klikni na pravý dolní roh — výkres zachová původní poměr stran','ok');
-  map.once('click',onPDFClick2);
-}
-
-function onPDFClick2(e){
-  const p2=e.latlng;
-  // Vypočítej bounds se zachováním poměru stran
-  // Použijeme šířku jako referenci a výšku dopočítáme
-  const pt1=map.latLngToContainerPoint(pdfPoint1);
-  const pt2=map.latLngToContainerPoint(p2);
-  const w=Math.abs(pt2.x-pt1.x);
-  const h=w/pdfAspectRatio; // zachování poměru stran!
-  // Levý horní roh
-  const tlX=Math.min(pt1.x,pt2.x);
-  const tlY=Math.min(pt1.y,pt2.y);
-  const brX=tlX+w;
-  const brY=tlY+h;
-  const tl=map.containerPointToLatLng(L.point(tlX,tlY));
-  const br=map.containerPointToLatLng(L.point(brX,brY));
-  pdfBounds=L.latLngBounds(tl,br);
-  pdfPlaced=true;
-  pdfVisible=true;
+function onPdfMapClick(e){
+  pdfMapRef=e.latlng;
   map.getContainer().style.cursor='';
-  pdfPlacing=false;
-  updatePDFPosition();
-  document.getElementById('pdf-canvas').style.display='block';
+  pdfStep=0;
+  // Rotace: úhel od ref bodu k severu
+  const dx=pdfNorthPt.x-pdfRefPt.x;
+  const dy=pdfNorthPt.y-pdfRefPt.y;
+  pdfRotation=Math.atan2(dx,-dy)*(180/Math.PI);
+  pdfPlaced=true;
+  renderPDFOnMap();
   document.getElementById('btn-place-pdf').textContent='📍 Přemístit';
-  document.getElementById('btn-pdf-toggle').className='pdf-toggle-btn on';
-  document.getElementById('btn-pdf-toggle').textContent='👁 Výkres zap';
-  showToast('✓ Výkres umístěn se správným poměrem stran','ok');
+  document.getElementById('pdf-canvas').style.display='block';
+  showToast(`✓ Výkres umístěn · natočení ${pdfRotation.toFixed(1)}° · měřítko 1:${pdfScale}`,'ok');
+}
+
+function cancelPDFPlacement(){
+  document.getElementById('pdf-placement-overlay').classList.add('hidden');
+  map.getContainer().style.cursor='';
+  pdfStep=0;
+}
+
+function renderPDFOnMap(){
+  if(!pdfPlaced||!pdfMapRef||!map)return;
+  const canvas=document.getElementById('pdf-canvas');
+  if(!pdfVisible){canvas.style.display='none';return;}
+  const totalWidthM=pdfCanvasW*pdfMetersPerPx;
+  const totalHeightM=pdfCanvasH*pdfMetersPerPx;
+  const refPxX=pdfRefPt.x*pdfCanvasW;
+  const refPxY=pdfRefPt.y*pdfCanvasH;
+  const refFromLeftM=refPxX*pdfMetersPerPx;
+  const refFromTopM=refPxY*pdfMetersPerPx;
+  const refMapPt=map.latLngToContainerPoint(pdfMapRef);
+  const mpp=getMapPixelsPerMeter();
+  const totalWidthPx=totalWidthM*mpp;
+  const totalHeightPx=totalHeightM*mpp;
+  const tlX=refMapPt.x-refFromLeftM*mpp;
+  const tlY=refMapPt.y-refFromTopM*mpp;
+  canvas.style.position='absolute';
+  canvas.style.left=tlX+'px';
+  canvas.style.top=tlY+'px';
+  canvas.style.width=totalWidthPx+'px';
+  canvas.style.height=totalHeightPx+'px';
+  canvas.style.display='block';
+  const rotOriginX=refFromLeftM*mpp;
+  const rotOriginY=refFromTopM*mpp;
+  canvas.style.transformOrigin=`${rotOriginX}px ${rotOriginY}px`;
+  canvas.style.transform=`rotate(${pdfRotation}deg)`;
+  updateOpacity();
+}
+
+function getMapPixelsPerMeter(){
+  const center=map.getCenter();
+  const zoom=map.getZoom();
+  const metersPerPixel=156543.03392*Math.cos(center.lat*Math.PI/180)/Math.pow(2,zoom);
+  return 1/metersPerPixel;
 }
 
 function updatePDFPosition(){
-  if(!pdfBounds||!map||!pdfPlaced||!pdfVisible)return;
-  const canvas=document.getElementById('pdf-canvas');
-  const tl=map.latLngToContainerPoint(pdfBounds.getNorthWest());
-  const br=map.latLngToContainerPoint(pdfBounds.getSouthEast());
-  const w=br.x-tl.x;
-  const h=w/pdfAspectRatio; // vždy zachovej poměr stran
-  canvas.style.left=tl.x+'px';
-  canvas.style.top=tl.y+'px';
-  canvas.style.width=w+'px';
-  canvas.style.height=h+'px';
+  if(pdfPlaced)renderPDFOnMap();
 }
 
 // ── PROGRESS & TOAST ─────────────────────────────────────────────────────────
