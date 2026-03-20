@@ -242,7 +242,6 @@ body:has(#pdf-panel.open) .progress-bar{top:96px;}
 }
 </style>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
 const MAPYCZ_API_KEY = '35EKo7UffSWvfZNmflSF28IUk0ulQvxfwNiinl81seA';
 const CAT_COLORS = {kolej:'#f59e0b',propustek:'#3b82f6',odvodneni:'#14b8a6',jine:'#8b5cf6'};
 const CAT_LABELS = {kolej:'Traťová kolej',propustek:'Propustky/mosty',odvodneni:'Odvodnění',jine:'Jiné'};
@@ -437,9 +436,10 @@ function goHome(){
 }
 
 // ── RESIZE SIDEBAR ────────────────────────────────────────────────────────────
-(function(){
+function initResizeSidebar(){
   const handle=document.getElementById('resize-handle');
   const sidebar=document.getElementById('sidebar');
+  if(!handle||!sidebar)return;
   let dragging=false, startX=0, startW=0;
   handle.addEventListener('mousedown',e=>{
     dragging=true;startX=e.clientX;startW=sidebar.offsetWidth;
@@ -454,7 +454,7 @@ function goHome(){
     if(!dragging)return;dragging=false;
     document.body.style.userSelect='';document.body.style.cursor='';
   });
-})();
+}
 
 // ── MAP ───────────────────────────────────────────────────────────────────────
 async function initMap(){
@@ -478,9 +478,13 @@ function toggleAerial(){
 }
 
 // ── DRAG & DROP ───────────────────────────────────────────────────────────────
-document.getElementById('folder-zone').addEventListener('dragover',e=>{e.preventDefault();e.currentTarget.classList.add('drag');});
-document.getElementById('folder-zone').addEventListener('dragleave',e=>e.currentTarget.classList.remove('drag'));
-document.getElementById('folder-zone').addEventListener('drop',e=>{e.preventDefault();e.currentTarget.classList.remove('drag');handleFiles(e.dataTransfer.files);});
+function initDragDrop(){
+  const fz=document.getElementById('folder-zone');
+  if(!fz)return;
+  fz.addEventListener('dragover',e=>{e.preventDefault();fz.classList.add('drag');});
+  fz.addEventListener('dragleave',()=>fz.classList.remove('drag'));
+  fz.addEventListener('drop',e=>{e.preventDefault();fz.classList.remove('drag');handleFiles(e.dataTransfer.files);});
+}
 
 // ── FILE HANDLING ─────────────────────────────────────────────────────────────
 async function handleFiles(files){
@@ -774,20 +778,17 @@ function lbZoom(delta){
 function lbResetZoom(){lbScale=1;lbTransX=0;lbTransY=0;applyLbTransform();document.getElementById('lb-zoom-val').textContent='100%';}
 function applyLbTransform(){document.getElementById('lb-img').style.transform=`scale(${lbScale}) translate(${lbTransX}px,${lbTransY}px)`;}
 
-// Scroll to zoom
-document.getElementById('lb-img-wrap').addEventListener('wheel',e=>{
-  e.preventDefault();
-  lbZoom(e.deltaY<0?0.15:-0.15);
-},{passive:false});
-
-// Drag to pan
-const lbWrap=document.getElementById('lb-img-wrap');
-lbWrap.addEventListener('mousedown',e=>{if(lbScale<=1)return;lbDragging=true;lbDragStart={x:e.clientX-lbTransX*lbScale,y:e.clientY-lbTransY*lbScale};lbWrap.classList.add('grabbing');});
-document.addEventListener('mousemove',e=>{if(!lbDragging)return;lbTransX=(e.clientX-lbDragStart.x)/lbScale;lbTransY=(e.clientY-lbDragStart.y)/lbScale;applyLbTransform();});
-document.addEventListener('mouseup',()=>{lbDragging=false;lbWrap.classList.remove('grabbing');});
-
-// Close on backdrop
-document.getElementById('lightbox').addEventListener('click',e=>{if(e.target===document.getElementById('lightbox'))closeLightbox();});
+// ── LIGHTBOX EVENTS ───────────────────────────────────────────────────────────
+function initLightboxEvents(){
+  const wrap=document.getElementById('lb-img-wrap');
+  const lb=document.getElementById('lightbox');
+  if(!wrap||!lb)return;
+  wrap.addEventListener('wheel',e=>{e.preventDefault();lbZoom(e.deltaY<0?0.15:-0.15);},{passive:false});
+  wrap.addEventListener('mousedown',e=>{if(lbScale<=1)return;lbDragging=true;lbDragStart={x:e.clientX-lbTransX*lbScale,y:e.clientY-lbTransY*lbScale};wrap.classList.add('grabbing');});
+  document.addEventListener('mousemove',e=>{if(!lbDragging)return;lbTransX=(e.clientX-lbDragStart.x)/lbScale;lbTransY=(e.clientY-lbDragStart.y)/lbScale;applyLbTransform();});
+  document.addEventListener('mouseup',()=>{lbDragging=false;wrap.classList.remove('grabbing');});
+  lb.addEventListener('click',e=>{if(e.target===lb)closeLightbox();});
+}
 
 // Note
 function saveNote(){
@@ -805,12 +806,11 @@ let pdfAspectRatio=1, pdfVisible=true;
 let pdfCanvasW=0, pdfCanvasH=0;
 // Placement state
 let pdfStep=0;
-let pdfRefPt=null;   // {x,y} procenta na výkresu
-let pdfNorthPt=null; // {x,y} procenta na výkresu
+let pdfRefPt=null;
+let pdfNorthPt=null;
 let pdfScale=500;
-let pdfPlaced=false;
-let pdfMapRef=null;  // L.LatLng
-let pdfRotation=0;   // stupně
+let pdfMapRef=null;
+let pdfRotation=0;
 let pdfMetersPerPx=1;
 
 async function loadPDF(file){
@@ -1035,13 +1035,19 @@ function initApp() {
   if(typeof pdfjsLib !== 'undefined') {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
   }
+  initResizeSidebar();
+  initDragDrop();
+  initLightboxEvents();
   loadProjects();
   renderProjectScreen();
   setFilterTab('day');
 }
 
-initApp();
-}); // end DOMContentLoaded
+if(document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 </script>
 </head>
 <body>
