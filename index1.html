@@ -241,223 +241,8 @@ body:has(#pdf-panel.open) .progress-bar{top:96px;}
   .resize-handle{display:none;}
 }
 </style>
-</head>
-<body>
-
-<!-- PROJECT SCREEN -->
-<div id="project-screen">
-  <div class="ps-logo">STAVBA<span>·</span>MAPA</div>
-  <div class="ps-title">Vyber projekt</div>
-  <div class="ps-sub">Každý projekt má vlastní fotky, mapu a výkresy</div>
-  <div class="project-grid" id="project-grid"></div>
-  <button class="btn btn-ghost" onclick="openNewProject()">+ Nový projekt</button>
-</div>
-
-<!-- PROJECT MODAL -->
-<div class="overlay hidden" id="project-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <div><div class="modal-title" id="modal-title">Nový projekt</div><div class="modal-sub">Základní informace o stavbě</div></div>
-      <button class="modal-close" onclick="closeProjectModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group"><label>Číslo projektu *</label><input class="inp" id="f-code" placeholder="CWC1H" maxlength="20"></div>
-        <div class="form-group"><label>Barva</label><input class="inp" id="f-color" type="color" value="#f59e0b" style="height:40px;padding:4px 8px;cursor:pointer;"></div>
-      </div>
-      <div class="form-group full"><label>Název stavby *</label><input class="inp" id="f-name" placeholder="Horní Lideč – státní hranice"></div>
-      <div class="form-row">
-        <div class="form-group"><label>Datum zahájení</label><input class="inp" id="f-start" type="date"></div>
-        <div class="form-group"><label>Datum ukončení</label><input class="inp" id="f-end" type="date"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Km od</label><input class="inp" id="f-km-from" placeholder="km 0.000"></div>
-        <div class="form-group"><label>Km do</label><input class="inp" id="f-km-to" placeholder="km 5.500"></div>
-      </div>
-      <div class="form-group"><label>Popis / poznámky</label><textarea class="inp" id="f-desc" placeholder="Rekonstrukce traťového svršku..."></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeProjectModal()">Zrušit</button>
-      <button class="btn btn-primary" onclick="saveProject()">Uložit projekt</button>
-    </div>
-  </div>
-</div>
-
-<!-- PROGRESS -->
-<div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-
-<!-- HEADER -->
-<header id="main-header" style="display:none">
-  <div class="logo" onclick="goHome()">STAVBA<span>·</span>MAPA</div>
-  <div class="project-badge" onclick="goHome()">
-    <span class="pb-code" id="hdr-code">—</span>
-    <span class="pb-name" id="hdr-name">—</span>
-    <span class="pb-arrow">▾</span>
-  </div>
-  <div class="header-right">
-    <div class="stat-pill">Fotek: <strong id="count-total">0</strong></div>
-    <div class="stat-pill">GPS: <strong id="count-gps">0</strong></div>
-    <button class="btn btn-ghost btn-sm" onclick="openEditProject()">✏ Projekt</button>
-    <button class="btn btn-ghost btn-sm" id="btn-aerial" onclick="toggleAerial()">🛰 Letecká</button>
-    <button class="btn btn-ghost btn-sm" id="btn-filter" onclick="toggleFilter()">🔍 Filtr</button>
-    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('pdf-input').click()">📄 PDF výkres</button>
-    <button class="btn btn-ghost btn-sm" onclick="clearAll()">Vymazat</button>
-    <input type="file" id="pdf-input" accept="application/pdf" onchange="loadPDF(this.files[0])">
-  </div>
-</header>
-
-<!-- MAIN APP -->
-<div class="main" id="main-app" style="display:none">
-  <div class="sidebar" id="sidebar">
-    <div class="resize-handle" id="resize-handle"></div>
-
-    <div class="sidebar-section">
-      <div class="section-label">Přidat fotky</div>
-      <div class="upload-row">
-        <div class="upload-zone" id="folder-zone" onclick="document.getElementById('folder-input').click()">
-          <div class="icon">📁</div><p><strong>Složka</strong></p><p>nebo přetáhni</p>
-        </div>
-        <div class="upload-zone" onclick="document.getElementById('file-input').click()">
-          <div class="icon">🖼️</div><p><strong>Fotky</strong></p><p>jednotlivě</p>
-        </div>
-        <div class="cam-zone" onclick="document.getElementById('camera-input').click()">
-          <div class="icon">📷</div><p>Fotit<br>teď</p>
-        </div>
-      </div>
-      <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)">
-      <input type="file" id="folder-input" multiple accept="image/*" webkitdirectory onchange="handleFiles(this.files)">
-      <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handleFiles(this.files)">
-    </div>
-
-    <div class="sidebar-section">
-      <div class="section-label">Kategorie</div>
-      <div class="cat-grid">
-        <button class="cat-btn active" data-cat="kolej" onclick="selectCat(this)"><span class="cat-dot" style="background:#f59e0b"></span>Traťová kolej</button>
-        <button class="cat-btn" data-cat="propustek" onclick="selectCat(this)"><span class="cat-dot" style="background:#3b82f6"></span>Propustky/mosty</button>
-        <button class="cat-btn" data-cat="odvodneni" onclick="selectCat(this)"><span class="cat-dot" style="background:#14b8a6"></span>Odvodnění</button>
-        <button class="cat-btn" data-cat="jine" onclick="selectCat(this)"><span class="cat-dot" style="background:#8b5cf6"></span>Jiné</button>
-      </div>
-      <input class="sub-input" id="sub-label" type="text" placeholder="Upřesnění (Kolej č. 1, km 12.4...)">
-    </div>
-
-    <div class="photo-list" id="photo-list">
-      <div class="empty-list">Zatím žádné fotky.<br>Nahraj složku nebo vyfoť přímo.</div>
-    </div>
-  </div>
-
-  <div id="map-wrap">
-    <div id="map"></div>
-    <div id="pdf-overlay"><canvas id="pdf-canvas"></canvas></div>
-  </div>
-</div>
-
-<!-- PDF PANEL — fixní lišta, vždy viditelná nad mapou i výkresem -->
-<div id="pdf-panel">
-  <div style="font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;" id="pdf-name">—</div>
-  <button class="pdf-toggle-btn on" id="btn-pdf-toggle" onclick="togglePDFVisible()">👁 Výkres zap</button>
-  <div class="pdf-slider-wrap">
-    <div class="pdf-slider-label">Mapa</div>
-    <input type="range" class="pdf-slider" id="sl-map" min="0" max="100" value="100" oninput="updateOpacity()">
-  </div>
-  <div class="pdf-slider-wrap">
-    <div class="pdf-slider-label">Výkres</div>
-    <input type="range" class="pdf-slider" id="sl-pdf" min="0" max="100" value="70" oninput="updateOpacity()">
-  </div>
-  <div class="pdf-slider-wrap">
-    <div class="pdf-slider-label">Stránka</div>
-    <input type="range" class="pdf-slider" id="sl-page" min="1" max="1" value="1" oninput="renderPDFPage()">
-  </div>
-  <button class="btn btn-ghost btn-sm" id="btn-place-pdf" onclick="startPDFPlacement()">📍 Umístit</button>
-  <button class="btn btn-danger btn-sm" onclick="removePDF()" title="Odebrat výkres">✕</button>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- PDF PLACEMENT MODAL -->
-<div class="overlay hidden" id="pdf-placement-overlay">
-  <div class="modal" style="width:min(700px,96vw);max-height:92dvh;">
-    <div class="modal-header">
-      <div>
-        <div class="modal-title" id="pdf-modal-title">Umístit výkres na mapu</div>
-        <div class="modal-sub" id="pdf-modal-sub">Klikni na výkres — vyber referenční bod (např. křížení tratí)</div>
-      </div>
-      <button class="modal-close" onclick="cancelPDFPlacement()">✕</button>
-    </div>
-    <div class="modal-body" style="gap:10px;">
-      <!-- Krok indikátor -->
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
-        <div class="pdf-step active" id="pstep-1">1. Referenční bod</div>
-        <div style="color:var(--text3);font-size:12px;">→</div>
-        <div class="pdf-step" id="pstep-2">2. Šipka severu</div>
-        <div style="color:var(--text3);font-size:12px;">→</div>
-        <div class="pdf-step" id="pstep-3">3. Měřítko</div>
-        <div style="color:var(--text3);font-size:12px;">→</div>
-        <div class="pdf-step" id="pstep-4">4. Bod na mapě</div>
-      </div>
-      <!-- PDF náhled s crosshair -->
-      <div id="pdf-preview-wrap" style="position:relative;overflow:hidden;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);cursor:crosshair;user-select:none;">
-        <canvas id="pdf-preview-canvas" style="display:block;max-width:100%;max-height:420px;"></canvas>
-        <!-- Kliknuté body -->
-        <div id="pdf-refpt" style="display:none;position:absolute;width:16px;height:16px;background:#ef4444;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>
-        <div id="pdf-northpt" style="display:none;position:absolute;width:16px;height:16px;background:#3b82f6;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>
-        <div id="pdf-north-line" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
-      </div>
-      <!-- Měřítko vstup (krok 3) -->
-      <div id="pdf-scale-row" style="display:none;flex-direction:column;gap:8px;">
-        <div style="font-size:13px;color:var(--text);">Zadej měřítko výkresu:</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:14px;color:var(--text2);">1 :</span>
-          <input class="inp" id="pdf-scale-input" type="number" value="500" min="1" max="100000" placeholder="500" style="width:120px;">
-          <span style="font-size:12px;color:var(--text2);">( 1:500 = každý cm výkresu = 5m ve skutečnosti )</span>
-        </div>
-        <div id="pdf-scale-info" style="font-size:11px;color:var(--teal);font-family:'DM Mono',monospace;"></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="cancelPDFPlacement()">Zrušit</button>
-      <button class="btn btn-primary" id="pdf-next-btn" onclick="pdfPlacementNext()" style="display:none;">Dále →</button>
-    </div>
-  </div>
-</div>
-
-<!-- LIGHTBOX -->
-<div id="lightbox">
-  <button class="lb-btn" id="lb-close" onclick="closeLightbox()">✕</button>
-  <button class="lb-btn" id="lb-prev" onclick="lbNav(-1)">‹</button>
-  <button class="lb-btn" id="lb-next" onclick="lbNav(1)">›</button>
-  <div id="lb-img-wrap">
-    <img id="lb-img" src="" draggable="false">
-  </div>
-  <div id="lb-zoom-bar">
-    <button onclick="lbZoom(-0.25)">−</button>
-    <span id="lb-zoom-val">100%</span>
-    <button onclick="lbZoom(0.25)">+</button>
-    <button onclick="lbResetZoom()" title="Reset">⟳</button>
-  </div>
-  <div id="lb-info">
-    <div id="lb-name"></div>
-    <div id="lb-meta"></div>
-  </div>
-  <div id="lb-note-wrap">
-    <textarea id="lb-note" rows="2" placeholder="Přidat poznámku k fotce..."></textarea>
-    <button id="lb-note-save" onclick="saveNote()">Uložit</button>
-  </div>
-</div>
-
-<!-- HOVER TOOLTIP -->
-<div id="map-tooltip">
-  <div class="tt-wrap">
-    <img id="tt-img" src="">
-    <div class="tt-body">
-      <div id="tt-cat"></div>
-      <div id="tt-name"></div>
-      <div id="tt-date"></div>
-    </div>
-  </div>
-  <div class="tt-arr"></div>
-</div>
-
 <script>
+document.addEventListener('DOMContentLoaded', function() {
 const MAPYCZ_API_KEY = '35EKo7UffSWvfZNmflSF28IUk0ulQvxfwNiinl81seA';
 const CAT_COLORS = {kolej:'#f59e0b',propustek:'#3b82f6',odvodneni:'#14b8a6',jine:'#8b5cf6'};
 const CAT_LABELS = {kolej:'Traťová kolej',propustek:'Propustky/mosty',odvodneni:'Odvodnění',jine:'Jiné'};
@@ -1255,12 +1040,225 @@ function initApp() {
   setFilterTab('day');
 }
 
-if(document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  initApp();
-}
+initApp();
+}); // end DOMContentLoaded
 </script>
+</head>
+<body>
+
+<!-- PROJECT SCREEN -->
+<div id="project-screen">
+  <div class="ps-logo">STAVBA<span>·</span>MAPA</div>
+  <div class="ps-title">Vyber projekt</div>
+  <div class="ps-sub">Každý projekt má vlastní fotky, mapu a výkresy</div>
+  <div class="project-grid" id="project-grid"></div>
+  <button class="btn btn-ghost" onclick="openNewProject()">+ Nový projekt</button>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="overlay hidden" id="project-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div><div class="modal-title" id="modal-title">Nový projekt</div><div class="modal-sub">Základní informace o stavbě</div></div>
+      <button class="modal-close" onclick="closeProjectModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Číslo projektu *</label><input class="inp" id="f-code" placeholder="CWC1H" maxlength="20"></div>
+        <div class="form-group"><label>Barva</label><input class="inp" id="f-color" type="color" value="#f59e0b" style="height:40px;padding:4px 8px;cursor:pointer;"></div>
+      </div>
+      <div class="form-group full"><label>Název stavby *</label><input class="inp" id="f-name" placeholder="Horní Lideč – státní hranice"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Datum zahájení</label><input class="inp" id="f-start" type="date"></div>
+        <div class="form-group"><label>Datum ukončení</label><input class="inp" id="f-end" type="date"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Km od</label><input class="inp" id="f-km-from" placeholder="km 0.000"></div>
+        <div class="form-group"><label>Km do</label><input class="inp" id="f-km-to" placeholder="km 5.500"></div>
+      </div>
+      <div class="form-group"><label>Popis / poznámky</label><textarea class="inp" id="f-desc" placeholder="Rekonstrukce traťového svršku..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeProjectModal()">Zrušit</button>
+      <button class="btn btn-primary" onclick="saveProject()">Uložit projekt</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+<!-- HEADER -->
+<header id="main-header" style="display:none">
+  <div class="logo" onclick="goHome()">STAVBA<span>·</span>MAPA</div>
+  <div class="project-badge" onclick="goHome()">
+    <span class="pb-code" id="hdr-code">—</span>
+    <span class="pb-name" id="hdr-name">—</span>
+    <span class="pb-arrow">▾</span>
+  </div>
+  <div class="header-right">
+    <div class="stat-pill">Fotek: <strong id="count-total">0</strong></div>
+    <div class="stat-pill">GPS: <strong id="count-gps">0</strong></div>
+    <button class="btn btn-ghost btn-sm" onclick="openEditProject()">✏ Projekt</button>
+    <button class="btn btn-ghost btn-sm" id="btn-aerial" onclick="toggleAerial()">🛰 Letecká</button>
+    <button class="btn btn-ghost btn-sm" id="btn-filter" onclick="toggleFilter()">🔍 Filtr</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('pdf-input').click()">📄 PDF výkres</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearAll()">Vymazat</button>
+    <input type="file" id="pdf-input" accept="application/pdf" onchange="loadPDF(this.files[0])">
+  </div>
+</header>
+
+<!-- MAIN APP -->
+<div class="main" id="main-app" style="display:none">
+  <div class="sidebar" id="sidebar">
+    <div class="resize-handle" id="resize-handle"></div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Přidat fotky</div>
+      <div class="upload-row">
+        <div class="upload-zone" id="folder-zone" onclick="document.getElementById('folder-input').click()">
+          <div class="icon">📁</div><p><strong>Složka</strong></p><p>nebo přetáhni</p>
+        </div>
+        <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+          <div class="icon">🖼️</div><p><strong>Fotky</strong></p><p>jednotlivě</p>
+        </div>
+        <div class="cam-zone" onclick="document.getElementById('camera-input').click()">
+          <div class="icon">📷</div><p>Fotit<br>teď</p>
+        </div>
+      </div>
+      <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)">
+      <input type="file" id="folder-input" multiple accept="image/*" webkitdirectory onchange="handleFiles(this.files)">
+      <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handleFiles(this.files)">
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Kategorie</div>
+      <div class="cat-grid">
+        <button class="cat-btn active" data-cat="kolej" onclick="selectCat(this)"><span class="cat-dot" style="background:#f59e0b"></span>Traťová kolej</button>
+        <button class="cat-btn" data-cat="propustek" onclick="selectCat(this)"><span class="cat-dot" style="background:#3b82f6"></span>Propustky/mosty</button>
+        <button class="cat-btn" data-cat="odvodneni" onclick="selectCat(this)"><span class="cat-dot" style="background:#14b8a6"></span>Odvodnění</button>
+        <button class="cat-btn" data-cat="jine" onclick="selectCat(this)"><span class="cat-dot" style="background:#8b5cf6"></span>Jiné</button>
+      </div>
+      <input class="sub-input" id="sub-label" type="text" placeholder="Upřesnění (Kolej č. 1, km 12.4...)">
+    </div>
+
+    <div class="photo-list" id="photo-list">
+      <div class="empty-list">Zatím žádné fotky.<br>Nahraj složku nebo vyfoť přímo.</div>
+    </div>
+  </div>
+
+  <div id="map-wrap">
+    <div id="map"></div>
+    <div id="pdf-overlay"><canvas id="pdf-canvas"></canvas></div>
+  </div>
+</div>
+
+<!-- PDF PANEL — fixní lišta, vždy viditelná nad mapou i výkresem -->
+<div id="pdf-panel">
+  <div style="font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;" id="pdf-name">—</div>
+  <button class="pdf-toggle-btn on" id="btn-pdf-toggle" onclick="togglePDFVisible()">👁 Výkres zap</button>
+  <div class="pdf-slider-wrap">
+    <div class="pdf-slider-label">Mapa</div>
+    <input type="range" class="pdf-slider" id="sl-map" min="0" max="100" value="100" oninput="updateOpacity()">
+  </div>
+  <div class="pdf-slider-wrap">
+    <div class="pdf-slider-label">Výkres</div>
+    <input type="range" class="pdf-slider" id="sl-pdf" min="0" max="100" value="70" oninput="updateOpacity()">
+  </div>
+  <div class="pdf-slider-wrap">
+    <div class="pdf-slider-label">Stránka</div>
+    <input type="range" class="pdf-slider" id="sl-page" min="1" max="1" value="1" oninput="renderPDFPage()">
+  </div>
+  <button class="btn btn-ghost btn-sm" id="btn-place-pdf" onclick="startPDFPlacement()">📍 Umístit</button>
+  <button class="btn btn-danger btn-sm" onclick="removePDF()" title="Odebrat výkres">✕</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- PDF PLACEMENT MODAL -->
+<div class="overlay hidden" id="pdf-placement-overlay">
+  <div class="modal" style="width:min(700px,96vw);max-height:92dvh;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="pdf-modal-title">Umístit výkres na mapu</div>
+        <div class="modal-sub" id="pdf-modal-sub">Klikni na výkres — vyber referenční bod (např. křížení tratí)</div>
+      </div>
+      <button class="modal-close" onclick="cancelPDFPlacement()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:10px;">
+      <!-- Krok indikátor -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
+        <div class="pdf-step active" id="pstep-1">1. Referenční bod</div>
+        <div style="color:var(--text3);font-size:12px;">→</div>
+        <div class="pdf-step" id="pstep-2">2. Šipka severu</div>
+        <div style="color:var(--text3);font-size:12px;">→</div>
+        <div class="pdf-step" id="pstep-3">3. Měřítko</div>
+        <div style="color:var(--text3);font-size:12px;">→</div>
+        <div class="pdf-step" id="pstep-4">4. Bod na mapě</div>
+      </div>
+      <!-- PDF náhled s crosshair -->
+      <div id="pdf-preview-wrap" style="position:relative;overflow:hidden;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);cursor:crosshair;user-select:none;">
+        <canvas id="pdf-preview-canvas" style="display:block;max-width:100%;max-height:420px;"></canvas>
+        <!-- Kliknuté body -->
+        <div id="pdf-refpt" style="display:none;position:absolute;width:16px;height:16px;background:#ef4444;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>
+        <div id="pdf-northpt" style="display:none;position:absolute;width:16px;height:16px;background:#3b82f6;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>
+        <div id="pdf-north-line" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
+      </div>
+      <!-- Měřítko vstup (krok 3) -->
+      <div id="pdf-scale-row" style="display:none;flex-direction:column;gap:8px;">
+        <div style="font-size:13px;color:var(--text);">Zadej měřítko výkresu:</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:14px;color:var(--text2);">1 :</span>
+          <input class="inp" id="pdf-scale-input" type="number" value="500" min="1" max="100000" placeholder="500" style="width:120px;">
+          <span style="font-size:12px;color:var(--text2);">( 1:500 = každý cm výkresu = 5m ve skutečnosti )</span>
+        </div>
+        <div id="pdf-scale-info" style="font-size:11px;color:var(--teal);font-family:'DM Mono',monospace;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cancelPDFPlacement()">Zrušit</button>
+      <button class="btn btn-primary" id="pdf-next-btn" onclick="pdfPlacementNext()" style="display:none;">Dále →</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <button class="lb-btn" id="lb-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-btn" id="lb-prev" onclick="lbNav(-1)">‹</button>
+  <button class="lb-btn" id="lb-next" onclick="lbNav(1)">›</button>
+  <div id="lb-img-wrap">
+    <img id="lb-img" src="" draggable="false">
+  </div>
+  <div id="lb-zoom-bar">
+    <button onclick="lbZoom(-0.25)">−</button>
+    <span id="lb-zoom-val">100%</span>
+    <button onclick="lbZoom(0.25)">+</button>
+    <button onclick="lbResetZoom()" title="Reset">⟳</button>
+  </div>
+  <div id="lb-info">
+    <div id="lb-name"></div>
+    <div id="lb-meta"></div>
+  </div>
+  <div id="lb-note-wrap">
+    <textarea id="lb-note" rows="2" placeholder="Přidat poznámku k fotce..."></textarea>
+    <button id="lb-note-save" onclick="saveNote()">Uložit</button>
+  </div>
+</div>
+
+<!-- HOVER TOOLTIP -->
+<div id="map-tooltip">
+  <div class="tt-wrap">
+    <img id="tt-img" src="">
+    <div class="tt-body">
+      <div id="tt-cat"></div>
+      <div id="tt-name"></div>
+      <div id="tt-date"></div>
+    </div>
+  </div>
+  <div class="tt-arr"></div>
+</div>
+
 <!-- FILTER PANEL — na úrovni body, position:fixed, žádný overflow ho neořízne -->
 <div id="filter-panel">
   <div class="filter-section">
