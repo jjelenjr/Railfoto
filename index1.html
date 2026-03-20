@@ -202,12 +202,29 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 #pdf-overlay{position:absolute;inset:0;pointer-events:none;z-index:50;}
 #pdf-canvas{position:absolute;transform-origin:top left;}
 
-/* PDF PANEL */
-#pdf-panel{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:12px 16px;z-index:3000;display:none;gap:12px;align-items:center;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+/* PDF PANEL — fixní lišta pod headerem, vždy nad vším */
+#pdf-panel{
+  position:fixed;top:52px;left:0;right:0;
+  background:var(--surface);
+  border-bottom:1px solid var(--border2);
+  padding:10px 16px;
+  z-index:3500;
+  display:none;
+  gap:14px;
+  align-items:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);
+  flex-wrap:wrap;
+}
 #pdf-panel.open{display:flex;}
+/* Když je PDF panel otevřený, posuň progress bar dolů */
+#pdf-panel.open ~ #main-app,
+body:has(#pdf-panel.open) .progress-bar{top:96px;}
 .pdf-slider-wrap{display:flex;flex-direction:column;gap:3px;}
 .pdf-slider-label{font-size:10px;color:var(--text2);font-family:'DM Mono',monospace;}
-.pdf-slider{width:120px;accent-color:var(--accent);}
+.pdf-slider{width:110px;accent-color:var(--accent);}
+.pdf-toggle-btn{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);font-family:inherit;transition:all .15s;}
+.pdf-toggle-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(245,158,11,.1);}
+.pdf-toggle-btn:hover{border-color:var(--accent2);color:var(--text);}
 
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -328,25 +345,27 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
   <div id="map-wrap">
     <div id="map"></div>
     <div id="pdf-overlay"><canvas id="pdf-canvas"></canvas></div>
-    <!-- PDF PANEL -->
-    <div id="pdf-panel">
-      <div style="font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;" id="pdf-name">—</div>
-      <div class="pdf-slider-wrap">
-        <div class="pdf-slider-label">Průhlednost mapy</div>
-        <input type="range" class="pdf-slider" id="sl-map" min="0" max="100" value="100" oninput="updateOpacity()">
-      </div>
-      <div class="pdf-slider-wrap">
-        <div class="pdf-slider-label">Průhlednost výkresu</div>
-        <input type="range" class="pdf-slider" id="sl-pdf" min="0" max="100" value="70" oninput="updateOpacity()">
-      </div>
-      <div class="pdf-slider-wrap">
-        <div class="pdf-slider-label">Stránka výkresu</div>
-        <input type="range" class="pdf-slider" id="sl-page" min="1" max="1" value="1" oninput="renderPDFPage()">
-      </div>
-      <button class="btn btn-ghost btn-sm" id="btn-place-pdf" onclick="startPDFPlacement()">📍 Umístit</button>
-      <button class="btn btn-danger btn-sm" onclick="removePDF()">✕</button>
-    </div>
   </div>
+</div>
+
+<!-- PDF PANEL — fixní lišta, vždy viditelná nad mapou i výkresem -->
+<div id="pdf-panel">
+  <div style="font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;" id="pdf-name">—</div>
+  <button class="pdf-toggle-btn on" id="btn-pdf-toggle" onclick="togglePDFVisible()">👁 Výkres zap</button>
+  <div class="pdf-slider-wrap">
+    <div class="pdf-slider-label">Mapa</div>
+    <input type="range" class="pdf-slider" id="sl-map" min="0" max="100" value="100" oninput="updateOpacity()">
+  </div>
+  <div class="pdf-slider-wrap">
+    <div class="pdf-slider-label">Výkres</div>
+    <input type="range" class="pdf-slider" id="sl-pdf" min="0" max="100" value="70" oninput="updateOpacity()">
+  </div>
+  <div class="pdf-slider-wrap">
+    <div class="pdf-slider-label">Stránka</div>
+    <input type="range" class="pdf-slider" id="sl-page" min="1" max="1" value="1" oninput="renderPDFPage()">
+  </div>
+  <button class="btn btn-ghost btn-sm" id="btn-place-pdf" onclick="startPDFPlacement()">📍 Umístit</button>
+  <button class="btn btn-danger btn-sm" onclick="removePDF()" title="Odebrat výkres">✕</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -410,9 +429,78 @@ let activeFilterTab='day';
 // ── STORAGE ───────────────────────────────────────────────────────────────────
 function saveProjects(){localStorage.setItem('sm_projects',JSON.stringify(projects));}
 function loadProjects(){try{projects=JSON.parse(localStorage.getItem('sm_projects')||'[]');}catch{projects=[];}}
-function savePhotos(pid){localStorage.setItem('sm_photos_'+pid,JSON.stringify(photos.map(p=>({...p,url:null}))));}
-function loadPhotos(pid){try{return JSON.parse(localStorage.getItem('sm_photos_'+pid)||'[]');}catch{return[];}}
 
+// IndexedDB pro fotky (přežije zavření prohlížeče)
+let db=null;
+async function openDB(){
+  if(db)return db;
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open('stavba-mapa',2);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains('photos'))d.createObjectStore('photos',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('blobs'))d.createObjectStore('blobs',{keyPath:'id'});
+    };
+    req.onsuccess=e=>{db=e.target.result;res(db);};
+    req.onerror=()=>rej(req.error);
+  });
+}
+
+async function savePhotos(pid){
+  const d=await openDB();
+  // Ulož metadata
+  const meta=photos.map(p=>({...p,url:null}));
+  localStorage.setItem('sm_photos_'+pid,JSON.stringify(meta));
+  // Ulož bloby do IndexedDB
+  const tx=d.transaction('blobs','readwrite');
+  const store=tx.objectStore('blobs');
+  for(const p of photos){
+    if(p.url&&p.url.startsWith('blob:')){
+      try{
+        const resp=await fetch(p.url);
+        const blob=await resp.blob();
+        store.put({id:String(p.id),blob,pid});
+      }catch{}
+    }
+  }
+}
+
+async function loadPhotos(pid){
+  const meta=[];
+  try{
+    const saved=JSON.parse(localStorage.getItem('sm_photos_'+pid)||'[]');
+    meta.push(...saved);
+  }catch{}
+  if(!meta.length)return[];
+  // Načti bloby z IndexedDB a obnov URL
+  try{
+    const d=await openDB();
+    const tx=d.transaction('blobs','readonly');
+    const store=tx.objectStore('blobs');
+    for(const p of meta){
+      const req=store.get(String(p.id));
+      await new Promise(res=>{
+        req.onsuccess=()=>{
+          if(req.result?.blob){p.url=URL.createObjectURL(req.result.blob);}
+          res();
+        };
+        req.onerror=()=>res();
+      });
+    }
+  }catch(e){console.warn('IndexedDB load error:',e);}
+  return meta;
+}
+
+async function deleteProjectBlobs(pid){
+  try{
+    const d=await openDB();
+    const tx=d.transaction('blobs','readwrite');
+    const store=tx.objectStore('blobs');
+    // Smaž všechny bloby tohoto projektu
+    const all=await new Promise(res=>{const r=store.getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>res([]);});
+    for(const b of all){if(b.pid===pid)store.delete(b.id);}
+  }catch{}
+}
 // ── PROJECTS ──────────────────────────────────────────────────────────────────
 function renderProjectScreen(){
   const grid=document.getElementById('project-grid');
@@ -878,6 +966,9 @@ function saveNote(){
 }
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
+let pdfAspectRatio=1; // šířka/výška originálu
+let pdfVisible=true;
+
 async function loadPDF(file){
   if(!file)return;
   const buf=await file.arrayBuffer();
@@ -886,7 +977,12 @@ async function loadPDF(file){
   document.getElementById('sl-page').value=1;
   document.getElementById('pdf-name').textContent=file.name;
   pdfCurrentPage=1;
+  pdfVisible=true;
+  document.getElementById('btn-pdf-toggle').className='pdf-toggle-btn on';
+  document.getElementById('btn-pdf-toggle').textContent='👁 Výkres zap';
   document.getElementById('pdf-panel').classList.add('open');
+  // Posuň mapu dolů aby panel nepřekrýval obsah
+  document.getElementById('main-app').style.marginTop='44px';
   await renderPDFPage();
   showToast('✓ PDF načteno — klikni "Umístit" pro přiložení na mapu','ok');
 }
@@ -896,15 +992,34 @@ async function renderPDFPage(){
   pdfCurrentPage=parseInt(document.getElementById('sl-page').value)||1;
   const page=await pdfDoc.getPage(pdfCurrentPage);
   const vp=page.getViewport({scale:2});
+  // Ulož poměr stran originálu
+  pdfAspectRatio=vp.width/vp.height;
   const canvas=document.getElementById('pdf-canvas');
   const ctx=canvas.getContext('2d');
   canvas.width=vp.width;canvas.height=vp.height;
   await page.render({canvasContext:ctx,viewport:vp}).promise;
   updateOpacity();
-  if(pdfBounds)updatePDFPosition();
+  if(pdfBounds&&pdfPlaced)updatePDFPosition();
+}
+
+function togglePDFVisible(){
+  pdfVisible=!pdfVisible;
+  const btn=document.getElementById('btn-pdf-toggle');
+  const canvas=document.getElementById('pdf-canvas');
+  if(pdfVisible){
+    btn.className='pdf-toggle-btn on';
+    btn.textContent='👁 Výkres zap';
+    canvas.style.display=pdfPlaced?'block':'none';
+    updateOpacity();
+  } else {
+    btn.className='pdf-toggle-btn';
+    btn.textContent='🙈 Výkres vyp';
+    canvas.style.display='none';
+  }
 }
 
 function updateOpacity(){
+  if(!pdfVisible)return;
   const mapOp=document.getElementById('sl-map').value/100;
   const pdfOp=document.getElementById('sl-pdf').value/100;
   document.querySelectorAll('.leaflet-tile-pane').forEach(el=>el.style.opacity=mapOp);
@@ -912,51 +1027,71 @@ function updateOpacity(){
 }
 
 function removePDF(){
-  pdfDoc=null;pdfBounds=null;pdfPlaced=false;
+  pdfDoc=null;pdfBounds=null;pdfPlaced=false;pdfVisible=true;
   const canvas=document.getElementById('pdf-canvas');
   canvas.style.display='none';
   document.getElementById('pdf-panel').classList.remove('open');
-  document.getElementById('sl-map').value=100;updateOpacity();
+  document.getElementById('main-app').style.marginTop='0';
+  document.getElementById('sl-map').value=100;
+  document.querySelectorAll('.leaflet-tile-pane').forEach(el=>el.style.opacity=1);
 }
 
-// PDF PLACEMENT — klik na mapu
+// PDF PLACEMENT — zachování poměru stran
 let pdfPlacing=false, pdfPoint1=null;
 
 function startPDFPlacement(){
   if(!pdfDoc){showToast('Nejdřív nahraj PDF výkres','warn');return;}
   pdfPlacing=true;pdfPoint1=null;
-  showToast('Klikni na mapu — bod kde chceš umístit roh výkresu','ok');
+  showToast('Klikni na mapu — levý horní roh výkresu','ok');
   map.getContainer().style.cursor='crosshair';
   map.once('click',onPDFClick1);
 }
 
 function onPDFClick1(e){
   pdfPoint1=e.latlng;
-  showToast('Skvěle! Klikni na druhý bod (opačný roh výkresu na mapě)','ok');
+  showToast('Teď klikni na pravý dolní roh — výkres zachová původní poměr stran','ok');
   map.once('click',onPDFClick2);
 }
 
 function onPDFClick2(e){
   const p2=e.latlng;
-  pdfBounds=L.latLngBounds(pdfPoint1,p2);
+  // Vypočítej bounds se zachováním poměru stran
+  // Použijeme šířku jako referenci a výšku dopočítáme
+  const pt1=map.latLngToContainerPoint(pdfPoint1);
+  const pt2=map.latLngToContainerPoint(p2);
+  const w=Math.abs(pt2.x-pt1.x);
+  const h=w/pdfAspectRatio; // zachování poměru stran!
+  // Levý horní roh
+  const tlX=Math.min(pt1.x,pt2.x);
+  const tlY=Math.min(pt1.y,pt2.y);
+  const brX=tlX+w;
+  const brY=tlY+h;
+  const tl=map.containerPointToLatLng(L.point(tlX,tlY));
+  const br=map.containerPointToLatLng(L.point(brX,brY));
+  pdfBounds=L.latLngBounds(tl,br);
   pdfPlaced=true;
+  pdfVisible=true;
   map.getContainer().style.cursor='';
   pdfPlacing=false;
   updatePDFPosition();
   document.getElementById('pdf-canvas').style.display='block';
   document.getElementById('btn-place-pdf').textContent='📍 Přemístit';
-  showToast('✓ Výkres umístěn — táhni slidery pro průhlednost','ok');
+  document.getElementById('btn-pdf-toggle').className='pdf-toggle-btn on';
+  document.getElementById('btn-pdf-toggle').textContent='👁 Výkres zap';
+  showToast('✓ Výkres umístěn se správným poměrem stran','ok');
 }
 
 function updatePDFPosition(){
-  if(!pdfBounds||!map||!pdfPlaced)return;
+  if(!pdfBounds||!map||!pdfPlaced||!pdfVisible)return;
   const canvas=document.getElementById('pdf-canvas');
   const tl=map.latLngToContainerPoint(pdfBounds.getNorthWest());
   const br=map.latLngToContainerPoint(pdfBounds.getSouthEast());
+  const w=br.x-tl.x;
+  const h=w/pdfAspectRatio; // vždy zachovej poměr stran
   canvas.style.left=tl.x+'px';
   canvas.style.top=tl.y+'px';
-  canvas.style.width=(br.x-tl.x)+'px';
-  canvas.style.height=(br.y-tl.y)+'px';
+  canvas.style.width=w+'px';
+  canvas.style.height=h+'px';
 }
 
 // ── PROGRESS & TOAST ─────────────────────────────────────────────────────────
