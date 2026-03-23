@@ -662,7 +662,13 @@ async function handleFiles(files){
   for(let i=0;i<arr.length;i++){
     const file=arr[i];
     setProgress(Math.round((i/arr.length)*100));
-    if(photos.find(p=>p.name===file.name&&p.size===file.size)){skipped++;continue;}
+    const existing=photos.find(p=>p.name===file.name&&p.size===file.size);
+    if(existing){
+      if(existing.url){skipped++;continue;}
+      // Blob was lost — restore URL from the re-uploaded file
+      existing.url=URL.createObjectURL(file);
+      added++;continue;
+    }
     const url=URL.createObjectURL(file);
     const exif=await readExif(file);
     const gps=exif.gps;
