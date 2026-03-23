@@ -285,18 +285,22 @@ async function savePhotos(pid){
   // Ulož metadata
   const meta=photos.map(p=>({...p,url:null}));
   localStorage.setItem('sm_photos_'+pid,JSON.stringify(meta));
-  // Ulož bloby do IndexedDB
-  const tx=d.transaction('blobs','readwrite');
-  const store=tx.objectStore('blobs');
+  // Fetch all blobs first (before opening transaction — awaiting inside a
+  // transaction causes it to auto-commit before any puts can happen)
+  const toStore=[];
   for(const p of photos){
     if(p.url&&p.url.startsWith('blob:')){
       try{
         const resp=await fetch(p.url);
         const blob=await resp.blob();
-        store.put({id:String(p.id),blob,pid});
+        toStore.push({id:String(p.id),blob,pid});
       }catch{}
     }
   }
+  // Now write everything in one transaction with no awaits between puts
+  const tx=d.transaction('blobs','readwrite');
+  const store=tx.objectStore('blobs');
+  for(const b of toStore){store.put(b);}
 }
 
 async function loadPhotos(pid){
