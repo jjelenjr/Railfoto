@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stavba Foto-Mapa</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifreader@4.14.1/dist/exif-reader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
 :root{
@@ -20,7 +20,7 @@
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
 
 /* OVERLAY & MODAL */
-.overlay{position:fixed;inset:0;background:rgba(10,12,20,.88);backdrop-filter:blur(4px);z-index:5000;display:flex;align-items:center;justify-content:center;}
+.overlay{position:fixed;inset:0;background:rgba(10,12,20,.88);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;}
 .overlay.hidden{display:none;}
 .modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(540px,96vw);max-height:90dvh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);}
 .modal-header{padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
@@ -51,7 +51,7 @@ textarea.inp{resize:vertical;min-height:72px;}
 .btn-sm{padding:5px 10px;font-size:12px;}
 
 /* PROJECT SCREEN */
-#project-screen{position:fixed;inset:0;background:var(--bg);z-index:4000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+#project-screen{position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
 #project-screen.hidden{display:none;}
 .ps-logo{font-family:'DM Mono',monospace;font-size:15px;color:var(--accent);letter-spacing:.06em;margin-bottom:40px;}
 .ps-logo span{color:var(--text2);}
@@ -71,7 +71,7 @@ textarea.inp{resize:vertical;min-height:72px;}
 .project-card:hover .pc-actions{opacity:1;}
 
 /* HEADER */
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 14px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:1001;position:relative;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 14px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:100;}
 .logo{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.05em;white-space:nowrap;cursor:pointer;}
 .logo span{color:var(--text2);}
 .project-badge{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;transition:all .15s;}
@@ -87,7 +87,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .main{display:flex;flex:1;overflow:hidden;position:relative;}
 
 /* SIDEBAR */
-.sidebar{width:300px;min-width:180px;max-width:600px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;position:relative;z-index:1001;}
+.sidebar{width:300px;min-width:180px;max-width:600px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;position:relative;}
 .resize-handle{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:10;background:transparent;transition:background .15s;}
 .resize-handle:hover{background:var(--accent2);}
 
@@ -134,7 +134,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .empty-list{text-align:center;padding:24px 12px;color:var(--text2);font-size:13px;}
 
 /* MAP */
-#map-wrap{flex:1;position:relative;overflow:visible;}
+#map-wrap{flex:1;position:relative;overflow:hidden;}
 #map{width:100%;height:100%;}
 
 /* PROGRESS */
@@ -149,7 +149,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .toast.err{border-color:var(--red);color:var(--red);}
 
 /* FILTER PANEL */
-#filter-panel{position:fixed;top:52px;right:0;width:320px;background:var(--surface);border:1px solid var(--border2);border-radius:0 0 0 12px;box-shadow:-4px 4px 24px rgba(0,0,0,.4);z-index:3000;padding:16px;display:none;flex-direction:column;gap:14px;max-height:calc(100dvh - 52px);overflow-y:auto;}
+#filter-panel{position:absolute;top:52px;right:0;width:320px;background:var(--surface);border:1px solid var(--border2);border-radius:0 0 0 12px;box-shadow:-4px 4px 24px rgba(0,0,0,.4);z-index:200;padding:16px;display:none;flex-direction:column;gap:14px;}
 #filter-panel.open{display:flex;}
 .filter-section{display:flex;flex-direction:column;gap:8px;}
 .filter-title{font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;}
@@ -202,34 +202,21 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 #pdf-overlay{position:absolute;inset:0;pointer-events:none;z-index:50;}
 #pdf-canvas{position:absolute;transform-origin:top left;}
 
-/* PDF PANEL — fixní lišta pod headerem, vždy nad vším */
-#pdf-panel{
-  position:fixed;top:52px;left:0;right:0;
-  background:var(--surface);
-  border-bottom:1px solid var(--border2);
-  padding:10px 16px;
-  z-index:3500;
-  display:none;
-  gap:14px;
-  align-items:center;
-  box-shadow:0 4px 16px rgba(0,0,0,.4);
-  flex-wrap:wrap;
-}
+/* PDF PANEL */
+#pdf-panel{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:12px 16px;z-index:300;display:none;gap:12px;align-items:center;box-shadow:0 8px 32px rgba(0,0,0,.5);}
 #pdf-panel.open{display:flex;}
-/* Když je PDF panel otevřený, posuň progress bar dolů */
-#pdf-panel.open ~ #main-app,
-body:has(#pdf-panel.open) .progress-bar{top:96px;}
 .pdf-slider-wrap{display:flex;flex-direction:column;gap:3px;}
 .pdf-slider-label{font-size:10px;color:var(--text2);font-family:'DM Mono',monospace;}
-.pdf-slider{width:110px;accent-color:var(--accent);}
-.pdf-toggle-btn{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);font-family:inherit;transition:all .15s;}
-.pdf-toggle-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(245,158,11,.1);}
-.pdf-toggle-btn:hover{border-color:var(--accent2);color:var(--text);}
+.pdf-slider{width:120px;accent-color:var(--accent);}
+
+/* PDF PLACEMENT MODAL */
 .pdf-step{font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);}
 .pdf-step.active{color:var(--accent);border-color:var(--accent);background:rgba(245,158,11,.1);}
 .pdf-step.done{color:var(--green);border-color:var(--green);background:rgba(34,197,94,.1);}
-
-::-webkit-scrollbar{width:4px;}
+#pdf-preview-wrap{position:relative;overflow:hidden;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);cursor:crosshair;user-select:none;}
+#pdf-refpt,#pdf-northpt{display:none;position:absolute;width:16px;height:16px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.5);}
+#pdf-refpt{background:#ef4444;}
+#pdf-northpt{background:#3b82f6;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 
@@ -241,18 +228,270 @@ body:has(#pdf-panel.open) .progress-bar{top:96px;}
   .resize-handle{display:none;}
 }
 </style>
+</head>
+<body>
+
+<!-- PROJECT SCREEN -->
+<div id="project-screen">
+  <div class="ps-logo">STAVBA<span>·</span>MAPA</div>
+  <div class="ps-title">Vyber projekt</div>
+  <div class="ps-sub">Každý projekt má vlastní fotky, mapu a výkresy</div>
+  <div class="project-grid" id="project-grid"></div>
+  <button class="btn btn-ghost" onclick="openNewProject()">+ Nový projekt</button>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="overlay hidden" id="project-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div><div class="modal-title" id="modal-title">Nový projekt</div><div class="modal-sub">Základní informace o stavbě</div></div>
+      <button class="modal-close" onclick="closeProjectModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Číslo projektu *</label><input class="inp" id="f-code" placeholder="CWC1H" maxlength="20"></div>
+        <div class="form-group"><label>Barva</label><input class="inp" id="f-color" type="color" value="#f59e0b" style="height:40px;padding:4px 8px;cursor:pointer;"></div>
+      </div>
+      <div class="form-group full"><label>Název stavby *</label><input class="inp" id="f-name" placeholder="Horní Lideč – státní hranice"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Datum zahájení</label><input class="inp" id="f-start" type="date"></div>
+        <div class="form-group"><label>Datum ukončení</label><input class="inp" id="f-end" type="date"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Km od</label><input class="inp" id="f-km-from" placeholder="km 0.000"></div>
+        <div class="form-group"><label>Km do</label><input class="inp" id="f-km-to" placeholder="km 5.500"></div>
+      </div>
+      <div class="form-group"><label>Popis / poznámky</label><textarea class="inp" id="f-desc" placeholder="Rekonstrukce traťového svršku..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeProjectModal()">Zrušit</button>
+      <button class="btn btn-primary" onclick="saveProject()">Uložit projekt</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+<!-- HEADER -->
+<header id="main-header" style="display:none">
+  <div class="logo" onclick="goHome()">STAVBA<span>·</span>MAPA</div>
+  <div class="project-badge" onclick="goHome()">
+    <span class="pb-code" id="hdr-code">—</span>
+    <span class="pb-name" id="hdr-name">—</span>
+    <span class="pb-arrow">▾</span>
+  </div>
+  <div class="header-right">
+    <div class="stat-pill">Fotek: <strong id="count-total">0</strong></div>
+    <div class="stat-pill">GPS: <strong id="count-gps">0</strong></div>
+    <button class="btn btn-ghost btn-sm" onclick="openEditProject()">✏ Projekt</button>
+    <button class="btn btn-ghost btn-sm" id="btn-aerial" onclick="toggleAerial()">🛰 Letecká</button>
+    <button class="btn btn-ghost btn-sm" id="btn-filter" onclick="toggleFilter()">🔍 Filtr</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('pdf-input').click()">📄 PDF výkres</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearAll()">Vymazat</button>
+    <input type="file" id="pdf-input" accept="application/pdf" onchange="loadPDF(this.files[0])">
+  </div>
+</header>
+
+<!-- MAIN APP -->
+<div class="main" id="main-app" style="display:none">
+  <div class="sidebar" id="sidebar">
+    <div class="resize-handle" id="resize-handle"></div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Přidat fotky</div>
+      <div class="upload-row">
+        <div class="upload-zone" id="folder-zone" onclick="document.getElementById('folder-input').click()">
+          <div class="icon">📁</div><p><strong>Složka</strong></p><p>nebo přetáhni</p>
+        </div>
+        <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+          <div class="icon">🖼️</div><p><strong>Fotky</strong></p><p>jednotlivě</p>
+        </div>
+        <div class="cam-zone" onclick="document.getElementById('camera-input').click()">
+          <div class="icon">📷</div><p>Fotit<br>teď</p>
+        </div>
+      </div>
+      <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)">
+      <input type="file" id="folder-input" multiple accept="image/*" webkitdirectory onchange="handleFiles(this.files)">
+      <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handleFiles(this.files)">
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Kategorie</div>
+      <div class="cat-grid">
+        <button class="cat-btn active" data-cat="kolej" onclick="selectCat(this)"><span class="cat-dot" style="background:#f59e0b"></span>Traťová kolej</button>
+        <button class="cat-btn" data-cat="propustek" onclick="selectCat(this)"><span class="cat-dot" style="background:#3b82f6"></span>Propustky/mosty</button>
+        <button class="cat-btn" data-cat="odvodneni" onclick="selectCat(this)"><span class="cat-dot" style="background:#14b8a6"></span>Odvodnění</button>
+        <button class="cat-btn" data-cat="jine" onclick="selectCat(this)"><span class="cat-dot" style="background:#8b5cf6"></span>Jiné</button>
+      </div>
+      <input class="sub-input" id="sub-label" type="text" placeholder="Upřesnění (Kolej č. 1, km 12.4...)">
+    </div>
+
+    <div class="photo-list" id="photo-list">
+      <div class="empty-list">Zatím žádné fotky.<br>Nahraj složku nebo vyfoť přímo.</div>
+    </div>
+  </div>
+
+  <div id="map-wrap">
+    <div id="map"></div>
+    <div id="pdf-overlay"><canvas id="pdf-canvas"></canvas></div>
+
+    <!-- FILTER PANEL -->
+    <div id="filter-panel">
+      <div class="filter-section">
+        <div class="filter-title">Typ filtru</div>
+        <div class="filter-tabs">
+          <button class="filter-tab active" id="ftab-day" onclick="setFilterTab('day')">Konkrétní den</button>
+          <button class="filter-tab" id="ftab-range" onclick="setFilterTab('range')">Rozsah dat</button>
+          <button class="filter-tab" id="ftab-month" onclick="setFilterTab('month')">Měsíc</button>
+        </div>
+      </div>
+
+      <!-- DEN -->
+      <div id="fmode-day" class="filter-section">
+        <div class="filter-title">Vyber den</div>
+        <input type="date" class="date-inp" id="f-day" oninput="applyFilter()">
+        <div id="day-quick" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;max-height:130px;overflow-y:auto;"></div>
+      </div>
+
+      <!-- ROZSAH -->
+      <div id="fmode-range" class="filter-section" style="display:none">
+        <div class="filter-title">Rozsah dat</div>
+        <div class="date-range-row">
+          <input type="date" class="date-inp" id="f-from" oninput="applyFilter()">
+          <span style="color:var(--text2);font-size:12px;">→</span>
+          <input type="date" class="date-inp" id="f-to" oninput="applyFilter()">
+        </div>
+      </div>
+
+      <!-- MĚSÍC -->
+      <div id="fmode-month" class="filter-section" style="display:none">
+        <div class="filter-title">Vyber měsíc</div>
+        <input type="number" class="date-inp" id="f-year" placeholder="Rok (2025)" style="margin-bottom:6px;" oninput="renderMonthGrid()">
+        <div class="month-grid" id="month-grid"></div>
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn-primary btn-sm" onclick="applyFilter()">Použít</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearFilter()">Zrušit filtr</button>
+      </div>
+    </div>
+
+    <!-- PDF PANEL -->
+    <div id="pdf-panel">
+      <div style="font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;" id="pdf-name">—</div>
+      <div class="pdf-slider-wrap">
+        <div class="pdf-slider-label">Průhlednost mapy</div>
+        <input type="range" class="pdf-slider" id="sl-map" min="0" max="100" value="100" oninput="updateOpacity()">
+      </div>
+      <div class="pdf-slider-wrap">
+        <div class="pdf-slider-label">Průhlednost výkresu</div>
+        <input type="range" class="pdf-slider" id="sl-pdf" min="0" max="100" value="70" oninput="updateOpacity()">
+      </div>
+      <div class="pdf-slider-wrap">
+        <div class="pdf-slider-label">Stránka výkresu</div>
+        <input type="range" class="pdf-slider" id="sl-page" min="1" max="1" value="1" oninput="renderPDFPage()">
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-place-pdf" onclick="startPDFPlacement()">📍 Umístit</button>
+      <button class="btn btn-danger btn-sm" onclick="removePDF()">✕</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- PDF PLACEMENT MODAL -->
+<div class="overlay hidden" id="pdf-placement-overlay">
+  <div class="modal" style="width:min(700px,96vw);max-height:92dvh;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="pdf-modal-title">Umístit výkres — krok 1 / 4</div>
+        <div class="modal-sub" id="pdf-modal-sub">Klikni na výkres — vyber referenční bod</div>
+      </div>
+      <button class="modal-close" onclick="cancelPDFPlacement()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:10px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="pdf-step active" id="pstep-1">1. Ref. bod</div>
+        <div style="color:var(--text3);font-size:12px;">→</div>
+        <div class="pdf-step" id="pstep-2">2. Sever</div>
+        <div style="color:var(--text3);font-size:12px;">→</div>
+        <div class="pdf-step" id="pstep-3">3. Měřítko</div>
+        <div style="color:var(--text3);font-size:12px;">→</div>
+        <div class="pdf-step" id="pstep-4">4. Bod na mapě</div>
+      </div>
+      <div id="pdf-preview-wrap">
+        <canvas id="pdf-preview-canvas" style="display:block;max-width:100%;max-height:420px;"></canvas>
+        <div id="pdf-refpt"></div>
+        <div id="pdf-northpt"></div>
+      </div>
+      <div id="pdf-scale-row" style="display:none;flex-direction:column;gap:8px;">
+        <div style="font-size:13px;color:var(--text);">Zadej měřítko výkresu:</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:14px;color:var(--text2);">1 :</span>
+          <input class="inp" id="pdf-scale-input" type="number" value="500" min="1" max="100000" style="width:120px;">
+          <span style="font-size:12px;color:var(--text2);">např. 500 = každý cm výkresu je 5m v terénu</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cancelPDFPlacement()">Zrušit</button>
+      <button class="btn btn-primary" id="pdf-next-btn" onclick="pdfPlacementNext()" style="display:none;">Dále →</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <button class="lb-btn" id="lb-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-btn" id="lb-prev" onclick="lbNav(-1)">‹</button>
+  <button class="lb-btn" id="lb-next" onclick="lbNav(1)">›</button>
+  <div id="lb-img-wrap">
+    <img id="lb-img" src="" draggable="false">
+  </div>
+  <div id="lb-zoom-bar">
+    <button onclick="lbZoom(-0.25)">−</button>
+    <span id="lb-zoom-val">100%</span>
+    <button onclick="lbZoom(0.25)">+</button>
+    <button onclick="lbResetZoom()" title="Reset">⟳</button>
+  </div>
+  <div id="lb-info">
+    <div id="lb-name"></div>
+    <div id="lb-meta"></div>
+  </div>
+  <div id="lb-note-wrap">
+    <textarea id="lb-note" rows="2" placeholder="Přidat poznámku k fotce..."></textarea>
+    <button id="lb-note-save" onclick="saveNote()">Uložit</button>
+  </div>
+</div>
+
+<!-- HOVER TOOLTIP -->
+<div id="map-tooltip">
+  <div class="tt-wrap">
+    <img id="tt-img" src="">
+    <div class="tt-body">
+      <div id="tt-cat"></div>
+      <div id="tt-name"></div>
+      <div id="tt-date"></div>
+    </div>
+  </div>
+  <div class="tt-arr"></div>
+</div>
+
 <script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
 const MAPYCZ_API_KEY = '35EKo7UffSWvfZNmflSF28IUk0ulQvxfwNiinl81seA';
 const CAT_COLORS = {kolej:'#f59e0b',propustek:'#3b82f6',odvodneni:'#14b8a6',jine:'#8b5cf6'};
 const CAT_LABELS = {kolej:'Traťová kolej',propustek:'Propustky/mosty',odvodneni:'Odvodnění',jine:'Jiné'};
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-var editingProjectId=null; // var = hoisted, žádný temporal dead zone problem
 let projects=[], currentProject=null, photos=[], markers={};
 let selectedCat='kolej';
-let filterMode='none';
-let filterDay='', filterFrom='', filterTo='', filterMonth='';
-let map, markerLayer, tileBase, tileAerial, mapReady=false, isAerial=false;
+let filterMode='none'; // none | day | range | month
+let filterDay='', filterFrom='', filterTo='', filterMonth=''; // YYYY-MM
+let SMap2=null, map, markerLayer, tileBase, tileAerial, mapReady=false, isAerial=false;
+let editingProjectId=null;
 // PDF
 let pdfDoc=null, pdfCurrentPage=1, pdfPlaced=false, pdfBounds=null;
 // Lightbox
@@ -263,88 +502,15 @@ let activeFilterTab='day';
 // ── STORAGE ───────────────────────────────────────────────────────────────────
 function saveProjects(){localStorage.setItem('sm_projects',JSON.stringify(projects));}
 function loadProjects(){try{projects=JSON.parse(localStorage.getItem('sm_projects')||'[]');}catch{projects=[];}}
+function savePhotos(pid){localStorage.setItem('sm_photos_'+pid,JSON.stringify(photos.map(p=>({...p,url:null}))));}
+function loadPhotos(pid){try{return JSON.parse(localStorage.getItem('sm_photos_'+pid)||'[]');}catch{return[];}}
 
-// IndexedDB pro fotky (přežije zavření prohlížeče)
-let db=null;
-async function openDB(){
-  if(db)return db;
-  return new Promise((res,rej)=>{
-    const req=indexedDB.open('stavba-mapa',2);
-    req.onupgradeneeded=e=>{
-      const d=e.target.result;
-      if(!d.objectStoreNames.contains('photos'))d.createObjectStore('photos',{keyPath:'id'});
-      if(!d.objectStoreNames.contains('blobs'))d.createObjectStore('blobs',{keyPath:'id'});
-    };
-    req.onsuccess=e=>{db=e.target.result;res(db);};
-    req.onerror=()=>rej(req.error);
-  });
-}
-
-async function savePhotos(pid){
-  const d=await openDB();
-  // Ulož metadata
-  const meta=photos.map(p=>({...p,url:null}));
-  localStorage.setItem('sm_photos_'+pid,JSON.stringify(meta));
-  // Fetch all blobs first (before opening transaction — awaiting inside a
-  // transaction causes it to auto-commit before any puts can happen)
-  const toStore=[];
-  for(const p of photos){
-    if(p.url&&p.url.startsWith('blob:')){
-      try{
-        const resp=await fetch(p.url);
-        const blob=await resp.blob();
-        toStore.push({id:String(p.id),blob,pid});
-      }catch{}
-    }
-  }
-  // Now write everything in one transaction with no awaits between puts
-  const tx=d.transaction('blobs','readwrite');
-  const store=tx.objectStore('blobs');
-  for(const b of toStore){store.put(b);}
-}
-
-async function loadPhotos(pid){
-  const meta=[];
-  try{
-    const saved=JSON.parse(localStorage.getItem('sm_photos_'+pid)||'[]');
-    meta.push(...saved);
-  }catch{}
-  if(!meta.length)return[];
-  // Načti bloby z IndexedDB a obnov URL
-  try{
-    const d=await openDB();
-    const tx=d.transaction('blobs','readonly');
-    const store=tx.objectStore('blobs');
-    for(const p of meta){
-      const req=store.get(String(p.id));
-      await new Promise(res=>{
-        req.onsuccess=()=>{
-          if(req.result?.blob){p.url=URL.createObjectURL(req.result.blob);}
-          res();
-        };
-        req.onerror=()=>res();
-      });
-    }
-  }catch(e){console.warn('IndexedDB load error:',e);}
-  return meta;
-}
-
-async function deleteProjectBlobs(pid){
-  try{
-    const d=await openDB();
-    const tx=d.transaction('blobs','readwrite');
-    const store=tx.objectStore('blobs');
-    // Smaž všechny bloby tohoto projektu
-    const all=await new Promise(res=>{const r=store.getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>res([]);});
-    for(const b of all){if(b.pid===pid)store.delete(b.id);}
-  }catch{}
-}
 // ── PROJECTS ──────────────────────────────────────────────────────────────────
 function renderProjectScreen(){
   const grid=document.getElementById('project-grid');
   grid.innerHTML='';
   projects.forEach(p=>{
-    const cnt=JSON.parse(localStorage.getItem('sm_photos_'+p.id)||'[]').length;
+    const cnt=loadPhotos(p.id).length;
     const card=document.createElement('div');
     card.className='project-card';
     card.innerHTML=`<span class="pc-count">${cnt} fotek</span>
@@ -411,10 +577,10 @@ function deleteProject(id){
   saveProjects();renderProjectScreen();
 }
 
-async function openProject(id){
+function openProject(id){
   const p=projects.find(x=>x.id===id);if(!p)return;
   currentProject=p;
-  photos=await loadPhotos(id);
+  photos=loadPhotos(id);
   filterMode='none';filterDay='';filterFrom='';filterTo='';filterMonth='';
   document.getElementById('project-screen').classList.add('hidden');
   document.getElementById('main-header').style.display='flex';
@@ -440,10 +606,9 @@ function goHome(){
 }
 
 // ── RESIZE SIDEBAR ────────────────────────────────────────────────────────────
-function initResizeSidebar(){
+(function(){
   const handle=document.getElementById('resize-handle');
   const sidebar=document.getElementById('sidebar');
-  if(!handle||!sidebar)return;
   let dragging=false, startX=0, startW=0;
   handle.addEventListener('mousedown',e=>{
     dragging=true;startX=e.clientX;startW=sidebar.offsetWidth;
@@ -458,7 +623,7 @@ function initResizeSidebar(){
     if(!dragging)return;dragging=false;
     document.body.style.userSelect='';document.body.style.cursor='';
   });
-}
+})();
 
 // ── MAP ───────────────────────────────────────────────────────────────────────
 async function initMap(){
@@ -482,13 +647,9 @@ function toggleAerial(){
 }
 
 // ── DRAG & DROP ───────────────────────────────────────────────────────────────
-function initDragDrop(){
-  const fz=document.getElementById('folder-zone');
-  if(!fz)return;
-  fz.addEventListener('dragover',e=>{e.preventDefault();fz.classList.add('drag');});
-  fz.addEventListener('dragleave',()=>fz.classList.remove('drag'));
-  fz.addEventListener('drop',e=>{e.preventDefault();fz.classList.remove('drag');handleFiles(e.dataTransfer.files);});
-}
+document.getElementById('folder-zone').addEventListener('dragover',e=>{e.preventDefault();e.currentTarget.classList.add('drag');});
+document.getElementById('folder-zone').addEventListener('dragleave',e=>e.currentTarget.classList.remove('drag'));
+document.getElementById('folder-zone').addEventListener('drop',e=>{e.preventDefault();e.currentTarget.classList.remove('drag');handleFiles(e.dataTransfer.files);});
 
 // ── FILE HANDLING ─────────────────────────────────────────────────────────────
 async function handleFiles(files){
@@ -633,16 +794,8 @@ function isVisible(p){
 
 // ── MARKERS ───────────────────────────────────────────────────────────────────
 let currentZoom=12;
-let zoomTimeout=null;
 function dotSize(z){return Math.round(8+(z-8)*1.6);}
-function onZoomChange(){
-  // Throttle — nepřekresluj při každém stepu animace zoomu
-  clearTimeout(zoomTimeout);
-  zoomTimeout=setTimeout(()=>{
-    const z=map.getZoom();
-    if(z!==currentZoom){currentZoom=z;refreshMarkers();}
-  },150);
-}
+function onZoomChange(){const z=map.getZoom();if(z!==currentZoom){currentZoom=z;refreshMarkers();}}
 
 function refreshMarkers(){
   if(!markerLayer)return;
@@ -788,17 +941,20 @@ function lbZoom(delta){
 function lbResetZoom(){lbScale=1;lbTransX=0;lbTransY=0;applyLbTransform();document.getElementById('lb-zoom-val').textContent='100%';}
 function applyLbTransform(){document.getElementById('lb-img').style.transform=`scale(${lbScale}) translate(${lbTransX}px,${lbTransY}px)`;}
 
-// ── LIGHTBOX EVENTS ───────────────────────────────────────────────────────────
-function initLightboxEvents(){
-  const wrap=document.getElementById('lb-img-wrap');
-  const lb=document.getElementById('lightbox');
-  if(!wrap||!lb)return;
-  wrap.addEventListener('wheel',e=>{e.preventDefault();lbZoom(e.deltaY<0?0.15:-0.15);},{passive:false});
-  wrap.addEventListener('mousedown',e=>{if(lbScale<=1)return;lbDragging=true;lbDragStart={x:e.clientX-lbTransX*lbScale,y:e.clientY-lbTransY*lbScale};wrap.classList.add('grabbing');});
-  document.addEventListener('mousemove',e=>{if(!lbDragging)return;lbTransX=(e.clientX-lbDragStart.x)/lbScale;lbTransY=(e.clientY-lbDragStart.y)/lbScale;applyLbTransform();});
-  document.addEventListener('mouseup',()=>{lbDragging=false;wrap.classList.remove('grabbing');});
-  lb.addEventListener('click',e=>{if(e.target===lb)closeLightbox();});
-}
+// Scroll to zoom
+document.getElementById('lb-img-wrap').addEventListener('wheel',e=>{
+  e.preventDefault();
+  lbZoom(e.deltaY<0?0.15:-0.15);
+},{passive:false});
+
+// Drag to pan
+const lbWrap=document.getElementById('lb-img-wrap');
+lbWrap.addEventListener('mousedown',e=>{if(lbScale<=1)return;lbDragging=true;lbDragStart={x:e.clientX-lbTransX*lbScale,y:e.clientY-lbTransY*lbScale};lbWrap.classList.add('grabbing');});
+document.addEventListener('mousemove',e=>{if(!lbDragging)return;lbTransX=(e.clientX-lbDragStart.x)/lbScale;lbTransY=(e.clientY-lbDragStart.y)/lbScale;applyLbTransform();});
+document.addEventListener('mouseup',()=>{lbDragging=false;lbWrap.classList.remove('grabbing');});
+
+// Close on backdrop
+document.getElementById('lightbox').addEventListener('click',e=>{if(e.target===document.getElementById('lightbox'))closeLightbox();});
 
 // Note
 function saveNote(){
@@ -812,16 +968,85 @@ function saveNote(){
 }
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
-let pdfAspectRatio=1, pdfVisible=true;
-let pdfCanvasW=0, pdfCanvasH=0;
-// Placement state
-let pdfStep=0;
-let pdfRefPt=null;
-let pdfNorthPt=null;
-let pdfScale=500;
-let pdfMapRef=null;
-let pdfRotation=0;
-let pdfMetersPerPx=1;
+async function loadPDF(file){
+  if(!file)return;
+  const buf=await file.arrayBuffer();
+  pdfDoc=await pdfjsLib.getDocument({data:buf}).promise;
+  document.getElementById('sl-page').max=pdfDoc.numPages;
+  document.getElementById('sl-page').value=1;
+  document.getElementById('pdf-name').textContent=file.name;
+  pdfCurrentPage=1;
+  document.getElementById('pdf-panel').classList.add('open');
+  await renderPDFPage();
+  showToast('✓ PDF načteno — klikni "Umístit" pro přiložení na mapu','ok');
+}
+
+async function renderPDFPage(){
+  if(!pdfDoc)return;
+  pdfCurrentPage=parseInt(document.getElementById('sl-page').value)||1;
+  const page=await pdfDoc.getPage(pdfCurrentPage);
+  const vp=page.getViewport({scale:2});
+  const canvas=document.getElementById('pdf-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=vp.width;canvas.height=vp.height;
+  await page.render({canvasContext:ctx,viewport:vp}).promise;
+  updateOpacity();
+  if(pdfBounds)updatePDFPosition();
+}
+
+function updateOpacity(){
+  const mapOp=document.getElementById('sl-map').value/100;
+  const pdfOp=document.getElementById('sl-pdf').value/100;
+  document.querySelectorAll('.leaflet-tile-pane').forEach(el=>el.style.opacity=mapOp);
+  document.getElementById('pdf-canvas').style.opacity=pdfOp;
+}
+
+function removePDF(){
+  pdfDoc=null;pdfBounds=null;pdfPlaced=false;
+  const canvas=document.getElementById('pdf-canvas');
+  canvas.style.display='none';
+  document.getElementById('pdf-panel').classList.remove('open');
+  document.getElementById('sl-map').value=100;updateOpacity();
+}
+
+// PDF PLACEMENT — klik na mapu
+let pdfPlacing=false, pdfPoint1=null;
+
+function startPDFPlacement(){
+  if(!pdfDoc){showToast('Nejdřív nahraj PDF výkres','warn');return;}
+  pdfPlacing=true;pdfPoint1=null;
+  showToast('Klikni na mapu — bod kde chceš umístit roh výkresu','ok');
+  map.getContainer().style.cursor='crosshair';
+  map.once('click',onPDFClick1);
+}
+
+function onPDFClick1(e){
+  pdfPoint1=e.latlng;
+  showToast('Skvěle! Klikni na druhý bod (opačný roh výkresu na mapě)','ok');
+  map.once('click',onPDFClick2);
+}
+
+function onPDFClick2(e){
+  const p2=e.latlng;
+  pdfBounds=L.latLngBounds(pdfPoint1,p2);
+  pdfPlaced=true;
+  map.getContainer().style.cursor='';
+  pdfPlacing=false;
+  updatePDFPosition();
+  document.getElementById('pdf-canvas').style.display='block';
+  document.getElementById('btn-place-pdf').textContent='📍 Přemístit';
+  showToast('✓ Výkres umístěn — táhni slidery pro průhlednost','ok');
+}
+
+function updatePDFPosition(){
+  if(pdfPlaced)renderPDFOnMap();
+}
+
+// ── PDF PLACEMENT MODAL ───────────────────────────────────────────────────────
+let pdfAspectRatio=1,pdfCanvasW=0,pdfCanvasH=0;
+let pdfStep=0,pdfRefPt=null,pdfNorthPt=null,pdfScale=500;
+let pdfMapRef=null,pdfRotation=0,pdfMetersPerPx=1;
+let pdfVisible=true;
 
 async function loadPDF(file){
   if(!file)return;
@@ -830,11 +1055,8 @@ async function loadPDF(file){
   document.getElementById('sl-page').max=pdfDoc.numPages;
   document.getElementById('sl-page').value=1;
   document.getElementById('pdf-name').textContent=file.name;
-  pdfCurrentPage=1; pdfVisible=true;
-  document.getElementById('btn-pdf-toggle').className='pdf-toggle-btn on';
-  document.getElementById('btn-pdf-toggle').textContent='👁 Výkres zap';
+  pdfCurrentPage=1;pdfVisible=true;
   document.getElementById('pdf-panel').classList.add('open');
-  document.getElementById('main-app').style.marginTop='44px';
   await renderPDFPage();
   showToast('✓ PDF načteno — klikni "Umístit" pro umístění na mapu','ok');
 }
@@ -845,33 +1067,18 @@ async function renderPDFPage(){
   const page=await pdfDoc.getPage(pdfCurrentPage);
   const vp=page.getViewport({scale:2});
   pdfAspectRatio=vp.width/vp.height;
-  pdfCanvasW=vp.width; pdfCanvasH=vp.height;
+  pdfCanvasW=vp.width;pdfCanvasH=vp.height;
   const canvas=document.getElementById('pdf-canvas');
-  canvas.width=vp.width; canvas.height=vp.height;
+  canvas.width=vp.width;canvas.height=vp.height;
   await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
   const prev=document.getElementById('pdf-preview-canvas');
-  if(prev&&prev.offsetParent!==null){
-    prev.width=vp.width; prev.height=vp.height;
-    await page.render({canvasContext:prev.getContext('2d'),viewport:vp}).promise;
-  }
+  if(prev){prev.width=vp.width;prev.height=vp.height;
+    await page.render({canvasContext:prev.getContext('2d'),viewport:vp}).promise;}
   updateOpacity();
   if(pdfPlaced)renderPDFOnMap();
 }
 
-function togglePDFVisible(){
-  pdfVisible=!pdfVisible;
-  const btn=document.getElementById('btn-pdf-toggle');
-  if(pdfVisible){
-    btn.className='pdf-toggle-btn on'; btn.textContent='👁 Výkres zap';
-    if(pdfPlaced)renderPDFOnMap(); updateOpacity();
-  } else {
-    btn.className='pdf-toggle-btn'; btn.textContent='🙈 Výkres vyp';
-    document.getElementById('pdf-canvas').style.display='none';
-  }
-}
-
 function updateOpacity(){
-  if(!pdfVisible)return;
   const mapOp=document.getElementById('sl-map').value/100;
   const pdfOp=document.getElementById('sl-pdf').value/100;
   document.querySelectorAll('.leaflet-tile-pane').forEach(el=>el.style.opacity=mapOp);
@@ -879,38 +1086,35 @@ function updateOpacity(){
 }
 
 function removePDF(){
-  pdfDoc=null; pdfPlaced=false; pdfVisible=true; pdfStep=0;
-  pdfRefPt=null; pdfNorthPt=null; pdfMapRef=null;
+  pdfDoc=null;pdfPlaced=false;pdfVisible=true;pdfStep=0;
+  pdfRefPt=null;pdfNorthPt=null;pdfMapRef=null;
   document.getElementById('pdf-canvas').style.display='none';
   document.getElementById('pdf-panel').classList.remove('open');
-  document.getElementById('main-app').style.marginTop='0';
   document.getElementById('sl-map').value=100;
   document.querySelectorAll('.leaflet-tile-pane').forEach(el=>el.style.opacity=1);
 }
 
-// ── PDF PLACEMENT MODAL ───────────────────────────────────────────────────────
 function startPDFPlacement(){
   if(!pdfDoc){showToast('Nejdřív nahraj PDF výkres','warn');return;}
-  pdfStep=1; pdfRefPt=null; pdfNorthPt=null;
-  document.getElementById('pdf-refpt').style.display='none';
-  document.getElementById('pdf-northpt').style.display='none';
+  pdfStep=1;pdfRefPt=null;pdfNorthPt=null;
+  const dot1=document.getElementById('pdf-refpt');
+  const dot2=document.getElementById('pdf-northpt');
+  if(dot1)dot1.style.display='none';
+  if(dot2)dot2.style.display='none';
   const svg=document.getElementById('pdf-north-svg');
   if(svg)svg.innerHTML='';
   document.getElementById('pdf-placement-overlay').classList.remove('hidden');
   setPdfStep(1);
   const prev=document.getElementById('pdf-preview-canvas');
-  prev.onclick=onPdfPreviewClick;
-  renderPDFPage();
+  if(prev){prev.onclick=onPdfPreviewClick;renderPDFPage();}
 }
 
 function setPdfStep(step){
   pdfStep=step;
-  const titles={
-    1:'Klikni na výkres — vyber referenční bod (křížení, roh budovy...)',
+  const titles={1:'Klikni na výkres — vyber referenční bod (křížení tratí, roh budovy...)',
     2:'Klikni na šipku SEVERU na výkresu',
-    3:'Zadej měřítko výkresu a klikni Dále',
-    4:'Klikni na stejný referenční bod na mapě'
-  };
+    3:'Zadej měřítko výkresu a klikni Dále →',
+    4:'Klikni na stejný referenční bod na mapě'};
   document.getElementById('pdf-modal-title').textContent='Umístit výkres — krok '+step+' / 4';
   document.getElementById('pdf-modal-sub').textContent=titles[step]||'';
   [1,2,3,4].forEach(i=>{
@@ -929,15 +1133,13 @@ function onPdfPreviewClick(e){
   if(pdfStep===1){
     pdfRefPt={x:xPct,y:yPct};
     const dot=document.getElementById('pdf-refpt');
-    dot.style.left=(xPct*100)+'%'; dot.style.top=(yPct*100)+'%'; dot.style.display='block';
+    dot.style.left=(xPct*100)+'%';dot.style.top=(yPct*100)+'%';dot.style.display='block';
     setPdfStep(2);
   } else if(pdfStep===2){
     pdfNorthPt={x:xPct,y:yPct};
     const dot=document.getElementById('pdf-northpt');
-    dot.style.left=(xPct*100)+'%'; dot.style.top=(yPct*100)+'%'; dot.style.display='block';
-    drawNorthLine();
-    setPdfStep(3);
-    document.getElementById('pdf-scale-input').value='500';
+    dot.style.left=(xPct*100)+'%';dot.style.top=(yPct*100)+'%';dot.style.display='block';
+    drawNorthLine();setPdfStep(3);
   }
 }
 
@@ -949,12 +1151,10 @@ function drawNorthLine(){
     svg.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
     document.getElementById('pdf-preview-wrap').appendChild(svg);
   }
-  const x1=pdfRefPt.x*100, y1=pdfRefPt.y*100;
-  const x2=pdfNorthPt.x*100, y2=pdfNorthPt.y*100;
-  svg.innerHTML=`<line x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6 3" opacity="0.85"/>
-    <circle cx="${x1}%" cy="${y1}%" r="5" fill="#ef4444" stroke="white" stroke-width="1.5"/>
-    <circle cx="${x2}%" cy="${y2}%" r="5" fill="#3b82f6" stroke="white" stroke-width="1.5"/>
-    <text x="${x2}%" y="${y2}%" dy="-10" text-anchor="middle" font-size="13" fill="#3b82f6" font-weight="bold" font-family="DM Mono,monospace">N</text>`;
+  svg.innerHTML=`<line x1="${pdfRefPt.x*100}%" y1="${pdfRefPt.y*100}%" x2="${pdfNorthPt.x*100}%" y2="${pdfNorthPt.y*100}%" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6 3"/>
+    <circle cx="${pdfRefPt.x*100}%" cy="${pdfRefPt.y*100}%" r="5" fill="#ef4444" stroke="white" stroke-width="1.5"/>
+    <circle cx="${pdfNorthPt.x*100}%" cy="${pdfNorthPt.y*100}%" r="5" fill="#3b82f6" stroke="white" stroke-width="1.5"/>
+    <text x="${pdfNorthPt.x*100}%" y="${pdfNorthPt.y*100}%" dy="-10" text-anchor="middle" font-size="13" fill="#3b82f6" font-weight="bold" font-family="DM Mono,monospace">N</text>`;
 }
 
 function pdfPlacementNext(){
@@ -965,7 +1165,7 @@ function pdfPlacementNext(){
   pdfMetersPerPx=(mmPerPx/1000)*pdfScale;
   document.getElementById('pdf-placement-overlay').classList.add('hidden');
   setPdfStep(4);
-  showToast('Klikni na mapě — stejný referenční bod jako na výkresu','ok');
+  showToast('Klikni na mapě na stejný referenční bod jako na výkresu','ok');
   map.getContainer().style.cursor='crosshair';
   map.once('click',onPdfMapClick);
 }
@@ -974,7 +1174,6 @@ function onPdfMapClick(e){
   pdfMapRef=e.latlng;
   map.getContainer().style.cursor='';
   pdfStep=0;
-  // Rotace: úhel od ref bodu k severu
   const dx=pdfNorthPt.x-pdfRefPt.x;
   const dy=pdfNorthPt.y-pdfRefPt.y;
   pdfRotation=Math.atan2(dx,-dy)*(180/Math.PI);
@@ -982,7 +1181,7 @@ function onPdfMapClick(e){
   renderPDFOnMap();
   document.getElementById('btn-place-pdf').textContent='📍 Přemístit';
   document.getElementById('pdf-canvas').style.display='block';
-  showToast(`✓ Výkres umístěn · natočení ${pdfRotation.toFixed(1)}° · měřítko 1:${pdfScale}`,'ok');
+  showToast(`✓ Výkres umístěn · natočení ${pdfRotation.toFixed(1)}° · 1:${pdfScale}`,'ok');
 }
 
 function cancelPDFPlacement(){
@@ -995,26 +1194,20 @@ function renderPDFOnMap(){
   if(!pdfPlaced||!pdfMapRef||!map)return;
   const canvas=document.getElementById('pdf-canvas');
   if(!pdfVisible){canvas.style.display='none';return;}
-  const totalWidthM=pdfCanvasW*pdfMetersPerPx;
-  const totalHeightM=pdfCanvasH*pdfMetersPerPx;
-  const refPxX=pdfRefPt.x*pdfCanvasW;
-  const refPxY=pdfRefPt.y*pdfCanvasH;
-  const refFromLeftM=refPxX*pdfMetersPerPx;
-  const refFromTopM=refPxY*pdfMetersPerPx;
-  const refMapPt=map.latLngToContainerPoint(pdfMapRef);
   const mpp=getMapPixelsPerMeter();
-  const totalWidthPx=totalWidthM*mpp;
-  const totalHeightPx=totalHeightM*mpp;
-  const tlX=refMapPt.x-refFromLeftM*mpp;
-  const tlY=refMapPt.y-refFromTopM*mpp;
+  const totalWidthPx=pdfCanvasW*pdfMetersPerPx*mpp;
+  const totalHeightPx=pdfCanvasH*pdfMetersPerPx*mpp;
+  const refMapPt=map.latLngToContainerPoint(pdfMapRef);
+  const tlX=refMapPt.x-pdfRefPt.x*totalWidthPx;
+  const tlY=refMapPt.y-pdfRefPt.y*totalHeightPx;
   canvas.style.position='absolute';
   canvas.style.left=tlX+'px';
   canvas.style.top=tlY+'px';
   canvas.style.width=totalWidthPx+'px';
   canvas.style.height=totalHeightPx+'px';
   canvas.style.display='block';
-  const rotOriginX=refFromLeftM*mpp;
-  const rotOriginY=refFromTopM*mpp;
+  const rotOriginX=pdfRefPt.x*totalWidthPx;
+  const rotOriginY=pdfRefPt.y*totalHeightPx;
   canvas.style.transformOrigin=`${rotOriginX}px ${rotOriginY}px`;
   canvas.style.transform=`rotate(${pdfRotation}deg)`;
   updateOpacity();
@@ -1023,12 +1216,8 @@ function renderPDFOnMap(){
 function getMapPixelsPerMeter(){
   const center=map.getCenter();
   const zoom=map.getZoom();
-  const metersPerPixel=156543.03392*Math.cos(center.lat*Math.PI/180)/Math.pow(2,zoom);
-  return 1/metersPerPixel;
-}
-
-function updatePDFPosition(){
-  if(pdfPlaced)renderPDFOnMap();
+  const mPerPx=156543.03392*Math.cos(center.lat*Math.PI/180)/Math.pow(2,zoom);
+  return 1/mPerPx;
 }
 
 // ── PROGRESS & TOAST ─────────────────────────────────────────────────────────
@@ -1041,273 +1230,9 @@ function showToast(msg,type=''){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-function initApp() {
-  if(typeof pdfjsLib !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-  }
-  initResizeSidebar();
-  initDragDrop();
-  initLightboxEvents();
-  loadProjects();
-  renderProjectScreen();
-  setFilterTab('day');
-}
-
-if(document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  initApp();
-}
+loadProjects();
+renderProjectScreen();
+setFilterTab('day');
 </script>
-</head>
-<body>
-
-<!-- PROJECT SCREEN -->
-<div id="project-screen">
-  <div class="ps-logo">STAVBA<span>·</span>MAPA</div>
-  <div class="ps-title">Vyber projekt</div>
-  <div class="ps-sub">Každý projekt má vlastní fotky, mapu a výkresy</div>
-  <div class="project-grid" id="project-grid"></div>
-  <button class="btn btn-ghost" onclick="openNewProject()">+ Nový projekt</button>
-</div>
-
-<!-- PROJECT MODAL -->
-<div class="overlay hidden" id="project-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <div><div class="modal-title" id="modal-title">Nový projekt</div><div class="modal-sub">Základní informace o stavbě</div></div>
-      <button class="modal-close" onclick="closeProjectModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group"><label>Číslo projektu *</label><input class="inp" id="f-code" placeholder="CWC1H" maxlength="20"></div>
-        <div class="form-group"><label>Barva</label><input class="inp" id="f-color" type="color" value="#f59e0b" style="height:40px;padding:4px 8px;cursor:pointer;"></div>
-      </div>
-      <div class="form-group full"><label>Název stavby *</label><input class="inp" id="f-name" placeholder="Horní Lideč – státní hranice"></div>
-      <div class="form-row">
-        <div class="form-group"><label>Datum zahájení</label><input class="inp" id="f-start" type="date"></div>
-        <div class="form-group"><label>Datum ukončení</label><input class="inp" id="f-end" type="date"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Km od</label><input class="inp" id="f-km-from" placeholder="km 0.000"></div>
-        <div class="form-group"><label>Km do</label><input class="inp" id="f-km-to" placeholder="km 5.500"></div>
-      </div>
-      <div class="form-group"><label>Popis / poznámky</label><textarea class="inp" id="f-desc" placeholder="Rekonstrukce traťového svršku..."></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeProjectModal()">Zrušit</button>
-      <button class="btn btn-primary" onclick="saveProject()">Uložit projekt</button>
-    </div>
-  </div>
-</div>
-
-<!-- PROGRESS -->
-<div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-
-<!-- HEADER -->
-<header id="main-header" style="display:none">
-  <div class="logo" onclick="goHome()">STAVBA<span>·</span>MAPA</div>
-  <div class="project-badge" onclick="goHome()">
-    <span class="pb-code" id="hdr-code">—</span>
-    <span class="pb-name" id="hdr-name">—</span>
-    <span class="pb-arrow">▾</span>
-  </div>
-  <div class="header-right">
-    <div class="stat-pill">Fotek: <strong id="count-total">0</strong></div>
-    <div class="stat-pill">GPS: <strong id="count-gps">0</strong></div>
-    <button class="btn btn-ghost btn-sm" onclick="openEditProject()">✏ Projekt</button>
-    <button class="btn btn-ghost btn-sm" id="btn-aerial" onclick="toggleAerial()">🛰 Letecká</button>
-    <button class="btn btn-ghost btn-sm" id="btn-filter" onclick="toggleFilter()">🔍 Filtr</button>
-    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('pdf-input').click()">📄 PDF výkres</button>
-    <button class="btn btn-ghost btn-sm" onclick="clearAll()">Vymazat</button>
-    <input type="file" id="pdf-input" accept="application/pdf" onchange="loadPDF(this.files[0])">
-  </div>
-</header>
-
-<!-- MAIN APP -->
-<div class="main" id="main-app" style="display:none">
-  <div class="sidebar" id="sidebar">
-    <div class="resize-handle" id="resize-handle"></div>
-
-    <div class="sidebar-section">
-      <div class="section-label">Přidat fotky</div>
-      <div class="upload-row">
-        <div class="upload-zone" id="folder-zone" onclick="document.getElementById('folder-input').click()">
-          <div class="icon">📁</div><p><strong>Složka</strong></p><p>nebo přetáhni</p>
-        </div>
-        <div class="upload-zone" onclick="document.getElementById('file-input').click()">
-          <div class="icon">🖼️</div><p><strong>Fotky</strong></p><p>jednotlivě</p>
-        </div>
-        <div class="cam-zone" onclick="document.getElementById('camera-input').click()">
-          <div class="icon">📷</div><p>Fotit<br>teď</p>
-        </div>
-      </div>
-      <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)">
-      <input type="file" id="folder-input" multiple accept="image/*" webkitdirectory onchange="handleFiles(this.files)">
-      <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handleFiles(this.files)">
-    </div>
-
-    <div class="sidebar-section">
-      <div class="section-label">Kategorie</div>
-      <div class="cat-grid">
-        <button class="cat-btn active" data-cat="kolej" onclick="selectCat(this)"><span class="cat-dot" style="background:#f59e0b"></span>Traťová kolej</button>
-        <button class="cat-btn" data-cat="propustek" onclick="selectCat(this)"><span class="cat-dot" style="background:#3b82f6"></span>Propustky/mosty</button>
-        <button class="cat-btn" data-cat="odvodneni" onclick="selectCat(this)"><span class="cat-dot" style="background:#14b8a6"></span>Odvodnění</button>
-        <button class="cat-btn" data-cat="jine" onclick="selectCat(this)"><span class="cat-dot" style="background:#8b5cf6"></span>Jiné</button>
-      </div>
-      <input class="sub-input" id="sub-label" type="text" placeholder="Upřesnění (Kolej č. 1, km 12.4...)">
-    </div>
-
-    <div class="photo-list" id="photo-list">
-      <div class="empty-list">Zatím žádné fotky.<br>Nahraj složku nebo vyfoť přímo.</div>
-    </div>
-  </div>
-
-  <div id="map-wrap">
-    <div id="map"></div>
-    <div id="pdf-overlay"><canvas id="pdf-canvas"></canvas></div>
-  </div>
-</div>
-
-<!-- PDF PANEL — fixní lišta, vždy viditelná nad mapou i výkresem -->
-<div id="pdf-panel">
-  <div style="font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;" id="pdf-name">—</div>
-  <button class="pdf-toggle-btn on" id="btn-pdf-toggle" onclick="togglePDFVisible()">👁 Výkres zap</button>
-  <div class="pdf-slider-wrap">
-    <div class="pdf-slider-label">Mapa</div>
-    <input type="range" class="pdf-slider" id="sl-map" min="0" max="100" value="100" oninput="updateOpacity()">
-  </div>
-  <div class="pdf-slider-wrap">
-    <div class="pdf-slider-label">Výkres</div>
-    <input type="range" class="pdf-slider" id="sl-pdf" min="0" max="100" value="70" oninput="updateOpacity()">
-  </div>
-  <div class="pdf-slider-wrap">
-    <div class="pdf-slider-label">Stránka</div>
-    <input type="range" class="pdf-slider" id="sl-page" min="1" max="1" value="1" oninput="renderPDFPage()">
-  </div>
-  <button class="btn btn-ghost btn-sm" id="btn-place-pdf" onclick="startPDFPlacement()">📍 Umístit</button>
-  <button class="btn btn-danger btn-sm" onclick="removePDF()" title="Odebrat výkres">✕</button>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- PDF PLACEMENT MODAL -->
-<div class="overlay hidden" id="pdf-placement-overlay">
-  <div class="modal" style="width:min(700px,96vw);max-height:92dvh;">
-    <div class="modal-header">
-      <div>
-        <div class="modal-title" id="pdf-modal-title">Umístit výkres na mapu</div>
-        <div class="modal-sub" id="pdf-modal-sub">Klikni na výkres — vyber referenční bod (např. křížení tratí)</div>
-      </div>
-      <button class="modal-close" onclick="cancelPDFPlacement()">✕</button>
-    </div>
-    <div class="modal-body" style="gap:10px;">
-      <!-- Krok indikátor -->
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
-        <div class="pdf-step active" id="pstep-1">1. Referenční bod</div>
-        <div style="color:var(--text3);font-size:12px;">→</div>
-        <div class="pdf-step" id="pstep-2">2. Šipka severu</div>
-        <div style="color:var(--text3);font-size:12px;">→</div>
-        <div class="pdf-step" id="pstep-3">3. Měřítko</div>
-        <div style="color:var(--text3);font-size:12px;">→</div>
-        <div class="pdf-step" id="pstep-4">4. Bod na mapě</div>
-      </div>
-      <!-- PDF náhled s crosshair -->
-      <div id="pdf-preview-wrap" style="position:relative;overflow:hidden;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);cursor:crosshair;user-select:none;">
-        <canvas id="pdf-preview-canvas" style="display:block;max-width:100%;max-height:420px;"></canvas>
-        <!-- Kliknuté body -->
-        <div id="pdf-refpt" style="display:none;position:absolute;width:16px;height:16px;background:#ef4444;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>
-        <div id="pdf-northpt" style="display:none;position:absolute;width:16px;height:16px;background:#3b82f6;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>
-        <div id="pdf-north-line" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
-      </div>
-      <!-- Měřítko vstup (krok 3) -->
-      <div id="pdf-scale-row" style="display:none;flex-direction:column;gap:8px;">
-        <div style="font-size:13px;color:var(--text);">Zadej měřítko výkresu:</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:14px;color:var(--text2);">1 :</span>
-          <input class="inp" id="pdf-scale-input" type="number" value="500" min="1" max="100000" placeholder="500" style="width:120px;">
-          <span style="font-size:12px;color:var(--text2);">( 1:500 = každý cm výkresu = 5m ve skutečnosti )</span>
-        </div>
-        <div id="pdf-scale-info" style="font-size:11px;color:var(--teal);font-family:'DM Mono',monospace;"></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="cancelPDFPlacement()">Zrušit</button>
-      <button class="btn btn-primary" id="pdf-next-btn" onclick="pdfPlacementNext()" style="display:none;">Dále →</button>
-    </div>
-  </div>
-</div>
-
-<!-- LIGHTBOX -->
-<div id="lightbox">
-  <button class="lb-btn" id="lb-close" onclick="closeLightbox()">✕</button>
-  <button class="lb-btn" id="lb-prev" onclick="lbNav(-1)">‹</button>
-  <button class="lb-btn" id="lb-next" onclick="lbNav(1)">›</button>
-  <div id="lb-img-wrap">
-    <img id="lb-img" src="" draggable="false">
-  </div>
-  <div id="lb-zoom-bar">
-    <button onclick="lbZoom(-0.25)">−</button>
-    <span id="lb-zoom-val">100%</span>
-    <button onclick="lbZoom(0.25)">+</button>
-    <button onclick="lbResetZoom()" title="Reset">⟳</button>
-  </div>
-  <div id="lb-info">
-    <div id="lb-name"></div>
-    <div id="lb-meta"></div>
-  </div>
-  <div id="lb-note-wrap">
-    <textarea id="lb-note" rows="2" placeholder="Přidat poznámku k fotce..."></textarea>
-    <button id="lb-note-save" onclick="saveNote()">Uložit</button>
-  </div>
-</div>
-
-<!-- HOVER TOOLTIP -->
-<div id="map-tooltip">
-  <div class="tt-wrap">
-    <img id="tt-img" src="">
-    <div class="tt-body">
-      <div id="tt-cat"></div>
-      <div id="tt-name"></div>
-      <div id="tt-date"></div>
-    </div>
-  </div>
-  <div class="tt-arr"></div>
-</div>
-
-<!-- FILTER PANEL — na úrovni body, position:fixed, žádný overflow ho neořízne -->
-<div id="filter-panel">
-  <div class="filter-section">
-    <div class="filter-title">Typ filtru</div>
-    <div class="filter-tabs">
-      <button class="filter-tab active" id="ftab-day" onclick="setFilterTab('day')">Den</button>
-      <button class="filter-tab" id="ftab-range" onclick="setFilterTab('range')">Rozsah</button>
-      <button class="filter-tab" id="ftab-month" onclick="setFilterTab('month')">Měsíc</button>
-    </div>
-  </div>
-  <div id="fmode-day" class="filter-section">
-    <div class="filter-title">Vyber den</div>
-    <input type="date" class="date-inp" id="f-day" oninput="applyFilter()">
-    <div id="day-quick" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;max-height:130px;overflow-y:auto;"></div>
-  </div>
-  <div id="fmode-range" class="filter-section" style="display:none">
-    <div class="filter-title">Rozsah dat</div>
-    <div class="date-range-row">
-      <input type="date" class="date-inp" id="f-from" oninput="applyFilter()">
-      <span style="color:var(--text2);font-size:12px;">→</span>
-      <input type="date" class="date-inp" id="f-to" oninput="applyFilter()">
-    </div>
-  </div>
-  <div id="fmode-month" class="filter-section" style="display:none">
-    <div class="filter-title">Vyber měsíc</div>
-    <input type="number" class="date-inp" id="f-year" placeholder="Rok (2025)" style="margin-bottom:6px;" oninput="renderMonthGrid()">
-    <div class="month-grid" id="month-grid"></div>
-  </div>
-  <div class="filter-actions">
-    <button class="btn btn-primary btn-sm" onclick="applyFilter()">Použít</button>
-    <button class="btn btn-ghost btn-sm" onclick="clearFilter()">Zrušit filtr</button>
-  </div>
-</div>
-
 </body>
 </html>
