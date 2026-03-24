@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stavba Foto-Mapa</title>
+<title>FOTORAIL</title>
 <script src="https://cdn.jsdelivr.net/npm/exifreader@4.14.1/dist/exif-reader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -149,7 +149,33 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .toast.err{border-color:var(--red);color:var(--red);}
 
 /* FILTER PANEL */
-#filter-panel{position:absolute;top:52px;right:0;width:320px;background:var(--surface);border:1px solid var(--border2);border-radius:0 0 0 12px;box-shadow:-4px 4px 24px rgba(0,0,0,.4);z-index:200;padding:16px;display:none;flex-direction:column;gap:14px;}
+#filter-panel{position:fixed;top:52px;right:0;width:320px;background:var(--surface);border:1px solid var(--border2);border-radius:0 0 0 12px;box-shadow:-4px 4px 24px rgba(0,0,0,.4);z-index:9500;padding:16px;display:none;flex-direction:column;gap:14px;max-height:calc(100dvh - 52px);overflow-y:auto;}
+
+/* CATEGORY CHIPS (filter) */
+.cat-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.cat-chip{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);font-size:11px;cursor:pointer;transition:all .15s;font-family:inherit;}
+.cat-chip:hover{border-color:var(--border2);color:var(--text);}
+.cat-chip.active{color:#0f1117;}
+.cat-chip-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+
+/* LIGHTBOX CATEGORY */
+.lb-cat-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1.5px solid transparent;transition:all .15s;margin-top:5px;}
+.lb-cat-badge:hover{filter:brightness(1.2);}
+.lb-cat-picker{position:fixed;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,.6);z-index:9100;display:none;flex-direction:column;gap:3px;min-width:180px;}
+.lb-cat-picker.open{display:flex;}
+.lb-cat-opt{display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:7px;cursor:pointer;font-size:12px;color:var(--text);transition:background .12s;}
+.lb-cat-opt:hover{background:var(--surface2);}
+.lb-cat-opt.sel{background:var(--surface3);}
+
+/* CATEGORY MANAGER */
+.cat-mgr-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:var(--bg);border:1px solid var(--border);}
+.cat-mgr-row input[type=text]{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:inherit;outline:none;}
+.cat-mgr-row input[type=color]{width:28px;height:28px;padding:0;border:none;border-radius:5px;cursor:pointer;background:none;flex-shrink:0;}
+.cat-mgr-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:5px;opacity:.6;}
+.cat-mgr-del:hover{opacity:1;background:rgba(239,68,68,.15);}
+
+/* PDF zoom hint */
+.pdf-zoom-hint{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;text-align:center;margin-top:4px;}
 #filter-panel.open{display:flex;}
 .filter-section{display:flex;flex-direction:column;gap:8px;}
 .filter-title{font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;}
@@ -203,7 +229,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 #pdf-canvas{position:absolute;transform-origin:top left;}
 
 /* PDF PANEL */
-#pdf-panel{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:12px 16px;z-index:300;display:none;gap:12px;align-items:center;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+#pdf-panel{position:fixed;top:52px;left:0;right:0;background:var(--surface);border-bottom:1px solid var(--border2);padding:10px 16px;z-index:9600;display:none;gap:12px;align-items:center;box-shadow:0 4px 16px rgba(0,0,0,.4);flex-wrap:wrap;}
 #pdf-panel.open{display:flex;}
 .pdf-slider-wrap{display:flex;flex-direction:column;gap:3px;}
 .pdf-slider-label{font-size:10px;color:var(--text2);font-family:'DM Mono',monospace;}
@@ -233,7 +259,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 
 <!-- PROJECT SCREEN -->
 <div id="project-screen">
-  <div class="ps-logo">STAVBA<span>·</span>MAPA</div>
+  <div class="ps-logo">FOTO<span>·</span>RAIL</div>
   <div class="ps-title">Vyber projekt</div>
   <div class="ps-sub">Každý projekt má vlastní fotky, mapu a výkresy</div>
   <div class="project-grid" id="project-grid"></div>
@@ -275,7 +301,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 
 <!-- HEADER -->
 <header id="main-header" style="display:none">
-  <div class="logo" onclick="goHome()">STAVBA<span>·</span>MAPA</div>
+  <div class="logo" onclick="goHome()">FOTO<span>·</span>RAIL</div>
   <div class="project-badge" onclick="goHome()">
     <span class="pb-code" id="hdr-code">—</span>
     <span class="pb-name" id="hdr-name">—</span>
@@ -285,6 +311,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
     <div class="stat-pill">Fotek: <strong id="count-total">0</strong></div>
     <div class="stat-pill">GPS: <strong id="count-gps">0</strong></div>
     <button class="btn btn-ghost btn-sm" onclick="openEditProject()">✏ Projekt</button>
+    <button class="btn btn-ghost btn-sm" onclick="openCatManager()">🏷 Kategorie</button>
     <button class="btn btn-ghost btn-sm" id="btn-aerial" onclick="toggleAerial()">🛰 Letecká</button>
     <button class="btn btn-ghost btn-sm" id="btn-filter" onclick="toggleFilter()">🔍 Filtr</button>
     <button class="btn btn-ghost btn-sm" onclick="document.getElementById('pdf-input').click()">📄 PDF výkres</button>
@@ -318,12 +345,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 
     <div class="sidebar-section">
       <div class="section-label">Kategorie</div>
-      <div class="cat-grid">
-        <button class="cat-btn active" data-cat="kolej" onclick="selectCat(this)"><span class="cat-dot" style="background:#f59e0b"></span>Traťová kolej</button>
-        <button class="cat-btn" data-cat="propustek" onclick="selectCat(this)"><span class="cat-dot" style="background:#3b82f6"></span>Propustky/mosty</button>
-        <button class="cat-btn" data-cat="odvodneni" onclick="selectCat(this)"><span class="cat-dot" style="background:#14b8a6"></span>Odvodnění</button>
-        <button class="cat-btn" data-cat="jine" onclick="selectCat(this)"><span class="cat-dot" style="background:#8b5cf6"></span>Jiné</button>
-      </div>
+      <div class="cat-grid" id="cat-grid"></div>
       <input class="sub-input" id="sub-label" type="text" placeholder="Upřesnění (Kolej č. 1, km 12.4...)">
     </div>
 
@@ -338,6 +360,10 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 
     <!-- FILTER PANEL -->
     <div id="filter-panel">
+      <div class="filter-section">
+        <div class="filter-title">Kategorie</div>
+        <div class="cat-chips" id="filter-cats-wrap"></div>
+      </div>
       <div class="filter-section">
         <div class="filter-title">Typ filtru</div>
         <div class="filter-tabs">
@@ -420,7 +446,8 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
         <div style="color:var(--text3);font-size:12px;">→</div>
         <div class="pdf-step" id="pstep-4">4. Bod na mapě</div>
       </div>
-      <div id="pdf-preview-wrap">
+      <div class="pdf-zoom-hint">Kolečko myši = zoom · klikni pro označení bodu</div>
+      <div id="pdf-preview-wrap" style="overflow:hidden;max-height:420px;">
         <canvas id="pdf-preview-canvas" style="display:block;max-width:100%;max-height:420px;"></canvas>
         <div id="pdf-refpt"></div>
         <div id="pdf-northpt"></div>
@@ -458,7 +485,12 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
   <div id="lb-info">
     <div id="lb-name"></div>
     <div id="lb-meta"></div>
+    <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px;">
+      <button class="lb-cat-badge" id="lb-cat-badge" onclick="openLbCatPicker(event)" title="Změnit kategorii"></button>
+      <span id="lb-sub" style="font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;"></span>
+    </div>
   </div>
+  <div class="lb-cat-picker" id="lb-cat-picker"></div>
   <div id="lb-note-wrap">
     <textarea id="lb-note" rows="2" placeholder="Přidat poznámku k fotce..."></textarea>
     <button id="lb-note-save" onclick="saveNote()">Uložit</button>
@@ -482,18 +514,85 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
 const MAPYCZ_API_KEY = '35EKo7UffSWvfZNmflSF28IUk0ulQvxfwNiinl81seA';
-const CAT_COLORS = {kolej:'#f59e0b',propustek:'#3b82f6',odvodneni:'#14b8a6',jine:'#8b5cf6'};
-const CAT_LABELS = {kolej:'Traťová kolej',propustek:'Propustky/mosty',odvodneni:'Odvodnění',jine:'Jiné'};
+
+// ── CATEGORIES (dynamic) ──────────────────────────────────────────────────────
+const DEFAULT_CATEGORIES = [
+  {id:'kolej',     name:'Traťová kolej',   color:'#f59e0b'},
+  {id:'propustek', name:'Propustky/mosty', color:'#3b82f6'},
+  {id:'odvodneni', name:'Odvodnění',       color:'#14b8a6'},
+  {id:'jine',      name:'Jiné',            color:'#8b5cf6'},
+];
+function loadCategories(){try{return JSON.parse(localStorage.getItem('railfoto_cats')||'null')||JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));}catch{return JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));}}
+function saveCategories(){localStorage.setItem('railfoto_cats',JSON.stringify(categories));}
+let categories=loadCategories();
+function getCat(id){return categories.find(c=>c.id===id)||{id,name:id,color:'#888'};}
+function catColor(id){return getCat(id).color;}
+function catLabel(id){return getCat(id).name;}
+
+// ── CATEGORY MANAGER ─────────────────────────────────────────────────────────
+function openCatManager(){renderCatManager();document.getElementById('cat-manager-overlay').classList.remove('hidden');}
+function closeCatManager(){document.getElementById('cat-manager-overlay').classList.add('hidden');}
+function renderCatManager(){
+  document.getElementById('cat-mgr-list').innerHTML=categories.map(c=>`
+    <div class="cat-mgr-row" id="cmr-${c.id}">
+      <input type="color" value="${c.color}" oninput="updateCatColor('${c.id}',this.value)">
+      <input type="text" value="${c.name}" placeholder="Název kategorie">
+      <button class="cat-mgr-del" onclick="deleteCat('${c.id}')">✕</button>
+    </div>`).join('');
+}
+function updateCatColor(id,color){const c=categories.find(x=>x.id===id);if(c)c.color=color;}
+function addNewCat(){
+  const id='cat_'+Date.now();
+  categories.push({id,name:'Nová kategorie',color:'#6366f1'});
+  renderCatManager();
+  setTimeout(()=>{const row=document.getElementById('cmr-'+id);if(row)row.querySelector('input[type=text]').select();},50);
+}
+function deleteCat(id){
+  if(categories.length<=1){showToast('Musí existovat alespoň 1 kategorie','warn');return;}
+  categories=categories.filter(c=>c.id!==id);renderCatManager();
+}
+function saveCatManager(){
+  document.querySelectorAll('#cat-mgr-list .cat-mgr-row').forEach(row=>{
+    const id=row.id.replace('cmr-','');
+    const c=categories.find(x=>x.id===id);
+    if(!c)return;
+    c.name=row.querySelector('input[type=text]').value||c.name;
+    c.color=row.querySelector('input[type=color]').value;
+  });
+  saveCategories();
+  if(!categories.find(c=>c.id===selectedCat))selectedCat=categories[0]?.id||'kolej';
+  renderCatButtons();renderCatChips();refreshMarkers();
+  closeCatManager();showToast('✓ Kategorie uloženy','ok');
+}
+
+function renderCatButtons(){
+  const grid=document.getElementById('cat-grid');if(!grid)return;
+  grid.innerHTML=categories.map(c=>`<button class="cat-btn${c.id===selectedCat?' active':''}" data-cat="${c.id}" onclick="selectCat(this)"><span class="cat-dot" style="background:${c.color}"></span>${c.name}</button>`).join('');
+}
+function renderCatChips(){
+  const wrap=document.getElementById('filter-cats-wrap');if(!wrap)return;
+  wrap.innerHTML=categories.map(c=>{
+    const on=filterCats.includes(c.id);
+    return `<button class="cat-chip${on?' active':''}" onclick="toggleFilterCat('${c.id}')" style="${on?`background:${c.color};border-color:${c.color};`:''}"><span class="cat-chip-dot" style="background:${c.color}${on?';filter:brightness(.3)':''}"></span>${c.name}</button>`;
+  }).join('');
+}
+function toggleFilterCat(id){
+  const idx=filterCats.indexOf(id);
+  if(idx>=0)filterCats.splice(idx,1);else filterCats.push(id);
+  renderCatChips();updateUI();refreshMarkers();
+}
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let projects=[], currentProject=null, photos=[], markers={};
 let selectedCat='kolej';
-let filterMode='none'; // none | day | range | month
-let filterDay='', filterFrom='', filterTo='', filterMonth=''; // YYYY-MM
+let filterMode='none';
+let filterDay='', filterFrom='', filterTo='', filterMonth='';
+let filterCats=[];
 let SMap2=null, map, markerLayer, tileBase, tileAerial, mapReady=false, isAerial=false;
 let editingProjectId=null;
 // PDF
 let pdfDoc=null, pdfCurrentPage=1, pdfPlaced=false, pdfBounds=null;
+let pdfPreviewZoom=1;
 // Lightbox
 let lbIndex=0, lbPhotos=[], lbScale=1, lbTransX=0, lbTransY=0, lbDragging=false, lbDragStart={x:0,y:0};
 // Filter tab
@@ -581,11 +680,11 @@ function openProject(id){
   const p=projects.find(x=>x.id===id);if(!p)return;
   currentProject=p;
   photos=loadPhotos(id);
-  filterMode='none';filterDay='';filterFrom='';filterTo='';filterMonth='';
+  filterMode='none';filterDay='';filterFrom='';filterTo='';filterMonth='';filterCats=[];
   document.getElementById('project-screen').classList.add('hidden');
   document.getElementById('main-header').style.display='flex';
   document.getElementById('main-app').style.display='flex';
-  updateHeader();
+  updateHeader();renderCatButtons();renderCatChips();
   if(mapReady){refreshMarkers();updateUI();fitMap();}
   else initMap().then(()=>{refreshMarkers();updateUI();fitMap();});
 }
@@ -770,17 +869,18 @@ function applyFilter(){
 }
 
 function clearFilter(){
-  filterMode='none';filterDay='';filterFrom='';filterTo='';filterMonth='';
+  filterMode='none';filterDay='';filterFrom='';filterTo='';filterMonth='';filterCats=[];
   document.getElementById('f-day').value='';
   document.getElementById('f-from').value='';
   document.getElementById('f-to').value='';
   document.getElementById('filter-panel').classList.remove('open');
   document.getElementById('btn-filter').className='btn btn-ghost btn-sm';
   document.getElementById('btn-filter').textContent='🔍 Filtr';
-  updateUI();refreshMarkers();fitMap();
+  renderCatChips();updateUI();refreshMarkers();fitMap();
 }
 
 function isVisible(p){
+  if(filterCats.length>0&&!filterCats.includes(p.cat))return false;
   if(filterMode==='none')return true;
   if(filterMode==='day')return p.date===filterDay;
   if(filterMode==='range'){
@@ -807,7 +907,7 @@ function refreshMarkers(){
 
 function buildMarker(photo){
   if(!map||!photo.lat)return;
-  const color=CAT_COLORS[photo.cat];
+  const color=catColor(photo.cat);
   const size=dotSize(currentZoom),total=size+12;
   const icon=L.divIcon({
     className:'',
@@ -844,7 +944,7 @@ function updateUI(){
         ${p.url?`<img class="photo-thumb" src="${p.url}" loading="lazy">`:`<div class="photo-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--text3)">🖼️</div>`}
         <div class="photo-info">
           <div class="photo-name">${p.name}</div>
-          <div class="photo-meta">${CAT_LABELS[p.cat]}${p.sub?' · '+p.sub:''}</div>
+          <div class="photo-meta"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${catColor(p.cat)};margin-right:4px;vertical-align:middle;"></span>${catLabel(p.cat)}${p.sub?' · '+p.sub:''}</div>
           <div class="photo-meta">${p.date||'—'}${p.timeStr?' '+p.timeStr:''}${p.note?` · 💬`:''}</div>
         </div>
         <span class="gps-badge ${p.lat?'gps-ok':'gps-no'}">${p.lat?'GPS':'bez GPS'}</span>
@@ -882,8 +982,8 @@ function showTooltip(photo,x,y){
   const tt=document.getElementById('map-tooltip');
   const img=document.getElementById('tt-img');
   img.src=photo.url||'';img.style.display=photo.url?'block':'none';
-  document.getElementById('tt-cat').style.color=CAT_COLORS[photo.cat];
-  document.getElementById('tt-cat').textContent=CAT_LABELS[photo.cat]+(photo.sub?' — '+photo.sub:'');
+  document.getElementById('tt-cat').style.color=catColor(photo.cat);
+  document.getElementById('tt-cat').textContent=catLabel(photo.cat)+(photo.sub?' — '+photo.sub:'');
   document.getElementById('tt-name').textContent=photo.name;
   document.getElementById('tt-date').textContent=(photo.date||'—')+(photo.timeStr?' '+photo.timeStr:'');
   tt.style.display='block';tt.style.left=x+'px';tt.style.top=y+'px';
@@ -906,11 +1006,40 @@ function renderLightbox(){
   const p=lbPhotos[lbIndex];if(!p)return;
   document.getElementById('lb-img').src=p.url;
   document.getElementById('lb-name').textContent=p.name;
-  document.getElementById('lb-meta').textContent=CAT_LABELS[p.cat]+(p.sub?' — '+p.sub:'')+'   📅 '+(p.date||'—')+(p.timeStr?' '+p.timeStr:'')+(p.lat?'   📍 '+p.lat.toFixed(5)+', '+p.lng.toFixed(5):'');
+  document.getElementById('lb-meta').textContent='📅 '+(p.date||'—')+(p.timeStr?' '+p.timeStr:'')+(p.lat?'   📍 '+p.lat.toFixed(5)+', '+p.lng.toFixed(5):'');
+  // Category badge
+  const cat=getCat(p.cat);
+  const badge=document.getElementById('lb-cat-badge');
+  if(badge){
+    badge.innerHTML=`<span style="width:8px;height:8px;border-radius:50%;background:${cat.color};display:inline-block;"></span> ${cat.name}`;
+    badge.style.background=cat.color+'22';badge.style.borderColor=cat.color+'66';badge.style.color=cat.color;
+  }
+  const subEl=document.getElementById('lb-sub');if(subEl)subEl.textContent=p.sub||'';
   document.getElementById('lb-note').value=p.note||'';
   document.getElementById('lb-prev').style.opacity=lbIndex>0?'1':'0.3';
   document.getElementById('lb-next').style.opacity=lbIndex<lbPhotos.length-1?'1':'0.3';
   lbResetZoom();
+  closeLbCatPicker();
+}
+
+function openLbCatPicker(e){
+  e.stopPropagation();
+  const picker=document.getElementById('lb-cat-picker');
+  if(picker.classList.contains('open')){closeLbCatPicker();return;}
+  const p=lbPhotos[lbIndex];
+  picker.innerHTML=categories.map(c=>`<div class="lb-cat-opt${p&&p.cat===c.id?' sel':''}" onclick="setLbCat('${c.id}')"><span style="width:10px;height:10px;border-radius:50%;background:${c.color};display:inline-block;flex-shrink:0;"></span>${c.name}</div>`).join('');
+  const r=e.currentTarget.getBoundingClientRect();
+  picker.style.left=r.left+'px';picker.style.top=(r.bottom+4)+'px';
+  picker.classList.add('open');
+  setTimeout(()=>document.addEventListener('click',closeLbCatPicker,{once:true}),10);
+}
+function closeLbCatPicker(){document.getElementById('lb-cat-picker')?.classList.remove('open');}
+function setLbCat(catId){
+  const p=lbPhotos[lbIndex];if(!p)return;
+  const orig=photos.find(x=>String(x.id)===String(p.id));
+  if(orig){orig.cat=catId;p.cat=catId;}
+  savePhotos(currentProject.id);updateUI();refreshMarkers();renderLightbox();
+  showToast('✓ Kategorie změněna','ok');
 }
 
 function lbNav(dir){
@@ -967,81 +1096,6 @@ function saveNote(){
   showToast('✓ Poznámka uložena','ok');
 }
 
-// ── PDF ───────────────────────────────────────────────────────────────────────
-async function loadPDF(file){
-  if(!file)return;
-  const buf=await file.arrayBuffer();
-  pdfDoc=await pdfjsLib.getDocument({data:buf}).promise;
-  document.getElementById('sl-page').max=pdfDoc.numPages;
-  document.getElementById('sl-page').value=1;
-  document.getElementById('pdf-name').textContent=file.name;
-  pdfCurrentPage=1;
-  document.getElementById('pdf-panel').classList.add('open');
-  await renderPDFPage();
-  showToast('✓ PDF načteno — klikni "Umístit" pro přiložení na mapu','ok');
-}
-
-async function renderPDFPage(){
-  if(!pdfDoc)return;
-  pdfCurrentPage=parseInt(document.getElementById('sl-page').value)||1;
-  const page=await pdfDoc.getPage(pdfCurrentPage);
-  const vp=page.getViewport({scale:2});
-  const canvas=document.getElementById('pdf-canvas');
-  const ctx=canvas.getContext('2d');
-  canvas.width=vp.width;canvas.height=vp.height;
-  await page.render({canvasContext:ctx,viewport:vp}).promise;
-  updateOpacity();
-  if(pdfBounds)updatePDFPosition();
-}
-
-function updateOpacity(){
-  const mapOp=document.getElementById('sl-map').value/100;
-  const pdfOp=document.getElementById('sl-pdf').value/100;
-  document.querySelectorAll('.leaflet-tile-pane').forEach(el=>el.style.opacity=mapOp);
-  document.getElementById('pdf-canvas').style.opacity=pdfOp;
-}
-
-function removePDF(){
-  pdfDoc=null;pdfBounds=null;pdfPlaced=false;
-  const canvas=document.getElementById('pdf-canvas');
-  canvas.style.display='none';
-  document.getElementById('pdf-panel').classList.remove('open');
-  document.getElementById('sl-map').value=100;updateOpacity();
-}
-
-// PDF PLACEMENT — klik na mapu
-let pdfPlacing=false, pdfPoint1=null;
-
-function startPDFPlacement(){
-  if(!pdfDoc){showToast('Nejdřív nahraj PDF výkres','warn');return;}
-  pdfPlacing=true;pdfPoint1=null;
-  showToast('Klikni na mapu — bod kde chceš umístit roh výkresu','ok');
-  map.getContainer().style.cursor='crosshair';
-  map.once('click',onPDFClick1);
-}
-
-function onPDFClick1(e){
-  pdfPoint1=e.latlng;
-  showToast('Skvěle! Klikni na druhý bod (opačný roh výkresu na mapě)','ok');
-  map.once('click',onPDFClick2);
-}
-
-function onPDFClick2(e){
-  const p2=e.latlng;
-  pdfBounds=L.latLngBounds(pdfPoint1,p2);
-  pdfPlaced=true;
-  map.getContainer().style.cursor='';
-  pdfPlacing=false;
-  updatePDFPosition();
-  document.getElementById('pdf-canvas').style.display='block';
-  document.getElementById('btn-place-pdf').textContent='📍 Přemístit';
-  showToast('✓ Výkres umístěn — táhni slidery pro průhlednost','ok');
-}
-
-function updatePDFPosition(){
-  if(pdfPlaced)renderPDFOnMap();
-}
-
 // ── PDF PLACEMENT MODAL ───────────────────────────────────────────────────────
 let pdfAspectRatio=1,pdfCanvasW=0,pdfCanvasH=0;
 let pdfStep=0,pdfRefPt=null,pdfNorthPt=null,pdfScale=500;
@@ -1096,7 +1150,7 @@ function removePDF(){
 
 function startPDFPlacement(){
   if(!pdfDoc){showToast('Nejdřív nahraj PDF výkres','warn');return;}
-  pdfStep=1;pdfRefPt=null;pdfNorthPt=null;
+  pdfStep=1;pdfRefPt=null;pdfNorthPt=null;pdfPreviewZoom=1;
   const dot1=document.getElementById('pdf-refpt');
   const dot2=document.getElementById('pdf-northpt');
   if(dot1)dot1.style.display='none';
@@ -1107,6 +1161,17 @@ function startPDFPlacement(){
   setPdfStep(1);
   const prev=document.getElementById('pdf-preview-canvas');
   if(prev){prev.onclick=onPdfPreviewClick;renderPDFPage();}
+  // Wheel zoom on preview
+  const wrap=document.getElementById('pdf-preview-wrap');
+  if(wrap){
+    wrap.onwheel=e=>{
+      e.preventDefault();
+      pdfPreviewZoom=Math.min(8,Math.max(1,pdfPreviewZoom*(e.deltaY<0?1.12:0.89)));
+      const p=document.getElementById('pdf-preview-canvas');
+      if(p){p.style.transform=`scale(${pdfPreviewZoom})`;p.style.transformOrigin='top left';}
+      wrap.style.overflow=pdfPreviewZoom>1?'auto':'hidden';
+    };
+  }
 }
 
 function setPdfStep(step){
@@ -1233,6 +1298,27 @@ function showToast(msg,type=''){
 loadProjects();
 renderProjectScreen();
 setFilterTab('day');
+renderCatButtons();
+renderCatChips();
 </script>
+
+<!-- CATEGORY MANAGER MODAL -->
+<div class="overlay hidden" id="cat-manager-overlay">
+  <div class="modal" style="width:min(480px,96vw);">
+    <div class="modal-header">
+      <div><div class="modal-title">Správa kategorií</div><div class="modal-sub">Vytvoř, přejmenuj nebo smaž kategorie</div></div>
+      <button class="modal-close" onclick="closeCatManager()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:8px;">
+      <div id="cat-mgr-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addNewCat()" style="margin-top:4px;align-self:flex-start;">+ Přidat kategorii</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCatManager()">Zrušit</button>
+      <button class="btn btn-primary" onclick="saveCatManager()">Uložit kategorie</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
