@@ -263,37 +263,6 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
   <div class="ps-title">Vyber projekt</div>
   <div class="ps-sub">Každý projekt má vlastní fotky, mapu a výkresy</div>
   <div class="project-grid" id="project-grid"></div>
-  <button class="btn btn-ghost" onclick="openNewProject()">+ Nový projekt</button>
-</div>
-
-<!-- PROJECT MODAL -->
-<div class="overlay hidden" id="project-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <div><div class="modal-title" id="modal-title">Nový projekt</div><div class="modal-sub">Základní informace o stavbě</div></div>
-      <button class="modal-close" onclick="closeProjectModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group"><label>Číslo projektu *</label><input class="inp" id="f-code" placeholder="CWC1H" maxlength="20"></div>
-        <div class="form-group"><label>Barva</label><input class="inp" id="f-color" type="color" value="#f59e0b" style="height:40px;padding:4px 8px;cursor:pointer;"></div>
-      </div>
-      <div class="form-group full"><label>Název stavby *</label><input class="inp" id="f-name" placeholder="Horní Lideč – státní hranice"></div>
-      <div class="form-row">
-        <div class="form-group"><label>Datum zahájení</label><input class="inp" id="f-start" type="date"></div>
-        <div class="form-group"><label>Datum ukončení</label><input class="inp" id="f-end" type="date"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Km od</label><input class="inp" id="f-km-from" placeholder="km 0.000"></div>
-        <div class="form-group"><label>Km do</label><input class="inp" id="f-km-to" placeholder="km 5.500"></div>
-      </div>
-      <div class="form-group"><label>Popis / poznámky</label><textarea class="inp" id="f-desc" placeholder="Rekonstrukce traťového svršku..."></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeProjectModal()">Zrušit</button>
-      <button class="btn btn-primary" onclick="saveProject()">Uložit projekt</button>
-    </div>
-  </div>
 </div>
 
 <!-- PROGRESS -->
@@ -310,7 +279,6 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
   <div class="header-right">
     <div class="stat-pill">Fotek: <strong id="count-total">0</strong></div>
     <div class="stat-pill">GPS: <strong id="count-gps">0</strong></div>
-    <button class="btn btn-ghost btn-sm" onclick="openEditProject()">✏ Projekt</button>
     <button class="btn btn-ghost btn-sm" onclick="openCatManager()">🏷 Kategorie</button>
     <button class="btn btn-ghost btn-sm" id="btn-aerial" onclick="toggleAerial()">🛰 Letecká</button>
     <button class="btn btn-ghost btn-sm" id="btn-filter" onclick="toggleFilter()">🔍 Filtr</button>
@@ -514,6 +482,8 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
 const MAPYCZ_API_KEY = '35EKo7UffSWvfZNmflSF28IUk0ulQvxfwNiinl81seA';
+const API_BASE = 'https://railway-inspector.fly.dev';
+const API_KEY = 'SuperTajnyKlicRailway2026!#';
 
 // ── CATEGORIES (dynamic) ──────────────────────────────────────────────────────
 const DEFAULT_CATEGORIES = [
@@ -599,8 +569,19 @@ let lbIndex=0, lbPhotos=[], lbScale=1, lbTransX=0, lbTransY=0, lbDragging=false,
 let activeFilterTab='day';
 
 // ── STORAGE ───────────────────────────────────────────────────────────────────
-function saveProjects(){localStorage.setItem('sm_projects',JSON.stringify(projects));}
-function loadProjects(){try{projects=JSON.parse(localStorage.getItem('sm_projects')||'[]');}catch{projects=[];}}
+function saveProjects(){} // projects are read-only from API
+async function loadProjects(){
+  try{
+    const resp=await fetch(API_BASE+'/api/sitenames',{headers:{'X-API-KEY':API_KEY}});
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+    console.log('[API] sitenames response:', data);
+    projects=data.map(s=>({id:String(s.id??s.Id),name:s.name??s.Name??'—',code:String(s.id??s.Id),color:'#f59e0b'}));
+  }catch(e){
+    showToast('Chyba načítání projektů: '+e.message,'err');
+    projects=[];
+  }
+}
 function savePhotos(pid){localStorage.setItem('sm_photos_'+pid,JSON.stringify(photos.map(p=>({...p,url:null}))));}
 function loadPhotos(pid){try{return JSON.parse(localStorage.getItem('sm_photos_'+pid)||'[]');}catch{return[];}}
 
@@ -1244,7 +1225,6 @@ function showToast(msg,type=''){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-loadProjects();
 renderProjectScreen();
 setFilterTab('day');
 renderCatButtons();
