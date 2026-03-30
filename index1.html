@@ -243,6 +243,8 @@ body:has(#pdf-panel.open) .progress-bar{top:96px;}
 </style>
 <script>
 const MAPYCZ_API_KEY = '35EKo7UffSWvfZNmflSF28IUk0ulQvxfwNiinl81seA';
+const API_BASE = 'https://railway-inspector.fly.dev';
+const API_KEY = 'SuperTajnyKlicRailway2026!#';
 const CAT_COLORS = {kolej:'#f59e0b',propustek:'#3b82f6',odvodneni:'#14b8a6',jine:'#8b5cf6'};
 const CAT_LABELS = {kolej:'Traťová kolej',propustek:'Propustky/mosty',odvodneni:'Odvodnění',jine:'Jiné'};
 
@@ -261,8 +263,18 @@ let lbIndex=0, lbPhotos=[], lbScale=1, lbTransX=0, lbTransY=0, lbDragging=false,
 let activeFilterTab='day';
 
 // ── STORAGE ───────────────────────────────────────────────────────────────────
-function saveProjects(){localStorage.setItem('sm_projects',JSON.stringify(projects));}
-function loadProjects(){try{projects=JSON.parse(localStorage.getItem('sm_projects')||'[]');}catch{projects=[];}}
+function saveProjects(){} // projects are read-only from API
+async function loadProjects(){
+  try{
+    const resp=await fetch(API_BASE+'/api/sitenames',{headers:{'X-API-KEY':API_KEY}});
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+    projects=data.map(s=>({id:String(s.Id),name:s.Name,code:String(s.Id),color:'#f59e0b'}));
+  }catch(e){
+    showToast('Chyba načítání projektů: '+e.message,'err');
+    projects=[];
+  }
+}
 
 // IndexedDB pro fotky (přežije zavření prohlížeče)
 let db=null;
@@ -336,76 +348,25 @@ async function deleteProjectBlobs(pid){
   }catch{}
 }
 // ── PROJECTS ──────────────────────────────────────────────────────────────────
-function renderProjectScreen(){
+async function renderProjectScreen(){
   const grid=document.getElementById('project-grid');
+  grid.innerHTML='<div class="empty-list">Načítám projekty…</div>';
+  await loadProjects();
   grid.innerHTML='';
+  if(!projects.length){
+    grid.innerHTML='<div class="empty-list">Žádné projekty nenalezeny.</div>';
+    return;
+  }
   projects.forEach(p=>{
-    const cnt=loadPhotos(p.id).length;
     const card=document.createElement('div');
     card.className='project-card';
-    card.innerHTML=`<span class="pc-count">${cnt} fotek</span>
-      <div class="pc-code"><span class="pc-dot" style="background:${p.color||'#f59e0b'}"></span>${p.code}</div>
-      <div class="pc-name">${p.name}</div>
-      <div class="pc-meta">${p.start?'▶ '+p.start:''}${p.end?' ■ '+p.end:''}<br>${p.kmFrom||p.kmTo?'⊷ '+(p.kmFrom||'?')+' → '+(p.kmTo||'?'):''}</div>
-      <div class="pc-actions">
-        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editProject('${p.id}')">✏</button>
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteProject('${p.id}')">✕</button>
-      </div>`;
+    card.innerHTML=`<div class="pc-code"><span class="pc-dot" style="background:${p.color||'#f59e0b'}"></span>${p.code}</div>
+      <div class="pc-name">${p.name}</div>`;
     card.addEventListener('click',()=>openProject(p.id));
     grid.appendChild(card);
   });
-  const nc=document.createElement('div');
-  nc.className='new-project-card';
-  nc.innerHTML='<span style="font-size:20px">+</span> Nový projekt';
-  nc.onclick=openNewProject;
-  grid.appendChild(nc);
 }
 
-function openNewProject(){
-  editingProjectId=null;
-  document.getElementById('modal-title').textContent='Nový projekt';
-  ['f-code','f-name','f-start','f-end','f-km-from','f-km-to','f-desc'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-color').value='#f59e0b';
-  document.getElementById('project-overlay').classList.remove('hidden');
-}
-
-function editProject(id){
-  const p=projects.find(x=>x.id===id);if(!p)return;
-  editingProjectId=id;
-  document.getElementById('modal-title').textContent='Upravit projekt';
-  document.getElementById('f-code').value=p.code||'';
-  document.getElementById('f-name').value=p.name||'';
-  document.getElementById('f-color').value=p.color||'#f59e0b';
-  document.getElementById('f-start').value=p.start||'';
-  document.getElementById('f-end').value=p.end||'';
-  document.getElementById('f-km-from').value=p.kmFrom||'';
-  document.getElementById('f-km-to').value=p.kmTo||'';
-  document.getElementById('f-desc').value=p.desc||'';
-  document.getElementById('project-overlay').classList.remove('hidden');
-}
-
-function openEditProject(){if(currentProject)editProject(currentProject.id);}
-function closeProjectModal(){document.getElementById('project-overlay').classList.add('hidden');}
-
-function saveProject(){
-  const code=document.getElementById('f-code').value.trim();
-  const name=document.getElementById('f-name').value.trim();
-  if(!code||!name){showToast('Vyplň číslo projektu a název','warn');return;}
-  const data={code,name,color:document.getElementById('f-color').value,start:document.getElementById('f-start').value,end:document.getElementById('f-end').value,kmFrom:document.getElementById('f-km-from').value.trim(),kmTo:document.getElementById('f-km-to').value.trim(),desc:document.getElementById('f-desc').value.trim()};
-  if(editingProjectId){
-    const idx=projects.findIndex(p=>p.id===editingProjectId);
-    if(idx>=0)projects[idx]={...projects[idx],...data};
-    if(currentProject&&currentProject.id===editingProjectId){currentProject=projects[idx];updateHeader();}
-  } else {data.id='p_'+Date.now();projects.push(data);}
-  saveProjects();closeProjectModal();renderProjectScreen();showToast('✓ Projekt uložen','ok');
-}
-
-function deleteProject(id){
-  if(!confirm('Smazat projekt?'))return;
-  projects=projects.filter(p=>p.id!==id);
-  localStorage.removeItem('sm_photos_'+id);
-  saveProjects();renderProjectScreen();
-}
 
 function openProject(id){
   const p=projects.find(x=>x.id===id);if(!p)return;
@@ -432,7 +393,7 @@ function goHome(){
   document.getElementById('main-app').style.display='none';
   document.getElementById('project-screen').classList.remove('hidden');
   document.getElementById('filter-panel').classList.remove('open');
-  renderProjectScreen();
+  renderProjectScreen();  // async, no need to await
 }
 
 // ── RESIZE SIDEBAR ────────────────────────────────────────────────────────────
@@ -1031,15 +992,14 @@ function showToast(msg,type=''){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-function initApp() {
+async function initApp() {
   if(typeof pdfjsLib !== 'undefined') {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
   }
   initResizeSidebar();
   initDragDrop();
   initLightboxEvents();
-  loadProjects();
-  renderProjectScreen();
+  await renderProjectScreen();
   setFilterTab('day');
 }
 
@@ -1058,37 +1018,6 @@ if(document.readyState === 'loading') {
   <div class="ps-title">Vyber projekt</div>
   <div class="ps-sub">Každý projekt má vlastní fotky, mapu a výkresy</div>
   <div class="project-grid" id="project-grid"></div>
-  <button class="btn btn-ghost" onclick="openNewProject()">+ Nový projekt</button>
-</div>
-
-<!-- PROJECT MODAL -->
-<div class="overlay hidden" id="project-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <div><div class="modal-title" id="modal-title">Nový projekt</div><div class="modal-sub">Základní informace o stavbě</div></div>
-      <button class="modal-close" onclick="closeProjectModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group"><label>Číslo projektu *</label><input class="inp" id="f-code" placeholder="CWC1H" maxlength="20"></div>
-        <div class="form-group"><label>Barva</label><input class="inp" id="f-color" type="color" value="#f59e0b" style="height:40px;padding:4px 8px;cursor:pointer;"></div>
-      </div>
-      <div class="form-group full"><label>Název stavby *</label><input class="inp" id="f-name" placeholder="Horní Lideč – státní hranice"></div>
-      <div class="form-row">
-        <div class="form-group"><label>Datum zahájení</label><input class="inp" id="f-start" type="date"></div>
-        <div class="form-group"><label>Datum ukončení</label><input class="inp" id="f-end" type="date"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Km od</label><input class="inp" id="f-km-from" placeholder="km 0.000"></div>
-        <div class="form-group"><label>Km do</label><input class="inp" id="f-km-to" placeholder="km 5.500"></div>
-      </div>
-      <div class="form-group"><label>Popis / poznámky</label><textarea class="inp" id="f-desc" placeholder="Rekonstrukce traťového svršku..."></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeProjectModal()">Zrušit</button>
-      <button class="btn btn-primary" onclick="saveProject()">Uložit projekt</button>
-    </div>
-  </div>
 </div>
 
 <!-- PROGRESS -->
@@ -1105,7 +1034,6 @@ if(document.readyState === 'loading') {
   <div class="header-right">
     <div class="stat-pill">Fotek: <strong id="count-total">0</strong></div>
     <div class="stat-pill">GPS: <strong id="count-gps">0</strong></div>
-    <button class="btn btn-ghost btn-sm" onclick="openEditProject()">✏ Projekt</button>
     <button class="btn btn-ghost btn-sm" id="btn-aerial" onclick="toggleAerial()">🛰 Letecká</button>
     <button class="btn btn-ghost btn-sm" id="btn-filter" onclick="toggleFilter()">🔍 Filtr</button>
     <button class="btn btn-ghost btn-sm" onclick="document.getElementById('pdf-input').click()">📄 PDF výkres</button>
