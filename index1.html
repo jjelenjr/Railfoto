@@ -571,15 +571,29 @@ let activeFilterTab='day';
 // ── STORAGE ───────────────────────────────────────────────────────────────────
 function saveProjects(){} // projects are read-only from API
 async function loadProjects(){
+  const url=API_BASE+'/api/sitenames';
   try{
-    const resp=await fetch(API_BASE+'/api/sitenames',{headers:{'X-API-KEY':API_KEY}});
-    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    console.log('[API] Fetching:', url);
+    const resp=await fetch(url,{headers:{'X-API-KEY':API_KEY}});
+    console.log('[API] Status:', resp.status, resp.statusText);
+    if(resp.status===401)throw new Error('401 Neplatný API klíč');
+    if(resp.status===403)throw new Error('403 Přístup zamítnut');
+    if(resp.status===404)throw new Error('404 Endpoint nenalezen — zkontroluj URL');
+    if(!resp.ok)throw new Error('HTTP '+resp.status+' '+resp.statusText);
     const data=await resp.json();
-    console.log('[API] sitenames response:', data);
+    console.log('[API] Data:', data);
+    if(!Array.isArray(data))throw new Error('API nevrátilo pole projektů');
     projects=data.map(s=>({id:String(s.id??s.Id),name:s.name??s.Name??'—',code:String(s.id??s.Id),color:'#f59e0b'}));
+    console.log('[API] Loaded', projects.length, 'projects');
+    return true;
   }catch(e){
-    showToast('Chyba načítání projektů: '+e.message,'err');
+    console.error('[API] Error:', e);
+    const msg=e.message.includes('Failed to fetch')||e.message.includes('NetworkError')
+      ?'Nelze se připojit k API.<br><small>Pravděpodobně CORS chyba nebo server nedostupný.<br>Otevři F12 → Console pro detaily.</small>'
+      :'Chyba: '+e.message+'<br><small>F12 → Console pro detaily.</small>';
+    document.getElementById('project-grid').innerHTML=`<div class="empty-list" style="color:var(--red)">${msg}</div>`;
     projects=[];
+    return false;
   }
 }
 function savePhotos(pid){localStorage.setItem('sm_photos_'+pid,JSON.stringify(photos.map(p=>({...p,url:null}))));}
@@ -589,7 +603,8 @@ function loadPhotos(pid){try{return JSON.parse(localStorage.getItem('sm_photos_'
 async function renderProjectScreen(){
   const grid=document.getElementById('project-grid');
   grid.innerHTML='<div class="empty-list">Načítám projekty…</div>';
-  await loadProjects();
+  const ok=await loadProjects();
+  if(!ok) return; // error message already shown by loadProjects
   grid.innerHTML='';
   if(!projects.length){
     grid.innerHTML='<div class="empty-list">Žádné projekty nenalezeny.</div>';
