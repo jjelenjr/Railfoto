@@ -605,76 +605,25 @@ function savePhotos(pid){localStorage.setItem('sm_photos_'+pid,JSON.stringify(ph
 function loadPhotos(pid){try{return JSON.parse(localStorage.getItem('sm_photos_'+pid)||'[]');}catch{return[];}}
 
 // ── PROJECTS ──────────────────────────────────────────────────────────────────
-function renderProjectScreen(){
+async function renderProjectScreen(){
   const grid=document.getElementById('project-grid');
+  grid.innerHTML='<div class="empty-list">Načítám projekty…</div>';
+  await loadProjects();
   grid.innerHTML='';
+  if(!projects.length){
+    grid.innerHTML='<div class="empty-list">Žádné projekty nenalezeny.</div>';
+    return;
+  }
   projects.forEach(p=>{
-    const cnt=loadPhotos(p.id).length;
     const card=document.createElement('div');
     card.className='project-card';
-    card.innerHTML=`<span class="pc-count">${cnt} fotek</span>
-      <div class="pc-code"><span class="pc-dot" style="background:${p.color||'#f59e0b'}"></span>${p.code}</div>
-      <div class="pc-name">${p.name}</div>
-      <div class="pc-meta">${p.start?'▶ '+p.start:''}${p.end?' ■ '+p.end:''}<br>${p.kmFrom||p.kmTo?'⊷ '+(p.kmFrom||'?')+' → '+(p.kmTo||'?'):''}</div>
-      <div class="pc-actions">
-        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editProject('${p.id}')">✏</button>
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteProject('${p.id}')">✕</button>
-      </div>`;
+    card.innerHTML=`<div class="pc-code"><span class="pc-dot" style="background:${p.color||'#f59e0b'}"></span>${p.code}</div>
+      <div class="pc-name">${p.name}</div>`;
     card.addEventListener('click',()=>openProject(p.id));
     grid.appendChild(card);
   });
-  const nc=document.createElement('div');
-  nc.className='new-project-card';
-  nc.innerHTML='<span style="font-size:20px">+</span> Nový projekt';
-  nc.onclick=openNewProject;
-  grid.appendChild(nc);
 }
 
-function openNewProject(){
-  editingProjectId=null;
-  document.getElementById('modal-title').textContent='Nový projekt';
-  ['f-code','f-name','f-start','f-end','f-km-from','f-km-to','f-desc'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-color').value='#f59e0b';
-  document.getElementById('project-overlay').classList.remove('hidden');
-}
-
-function editProject(id){
-  const p=projects.find(x=>x.id===id);if(!p)return;
-  editingProjectId=id;
-  document.getElementById('modal-title').textContent='Upravit projekt';
-  document.getElementById('f-code').value=p.code||'';
-  document.getElementById('f-name').value=p.name||'';
-  document.getElementById('f-color').value=p.color||'#f59e0b';
-  document.getElementById('f-start').value=p.start||'';
-  document.getElementById('f-end').value=p.end||'';
-  document.getElementById('f-km-from').value=p.kmFrom||'';
-  document.getElementById('f-km-to').value=p.kmTo||'';
-  document.getElementById('f-desc').value=p.desc||'';
-  document.getElementById('project-overlay').classList.remove('hidden');
-}
-
-function openEditProject(){if(currentProject)editProject(currentProject.id);}
-function closeProjectModal(){document.getElementById('project-overlay').classList.add('hidden');}
-
-function saveProject(){
-  const code=document.getElementById('f-code').value.trim();
-  const name=document.getElementById('f-name').value.trim();
-  if(!code||!name){showToast('Vyplň číslo projektu a název','warn');return;}
-  const data={code,name,color:document.getElementById('f-color').value,start:document.getElementById('f-start').value,end:document.getElementById('f-end').value,kmFrom:document.getElementById('f-km-from').value.trim(),kmTo:document.getElementById('f-km-to').value.trim(),desc:document.getElementById('f-desc').value.trim()};
-  if(editingProjectId){
-    const idx=projects.findIndex(p=>p.id===editingProjectId);
-    if(idx>=0)projects[idx]={...projects[idx],...data};
-    if(currentProject&&currentProject.id===editingProjectId){currentProject=projects[idx];updateHeader();}
-  } else {data.id='p_'+Date.now();projects.push(data);}
-  saveProjects();closeProjectModal();renderProjectScreen();showToast('✓ Projekt uložen','ok');
-}
-
-function deleteProject(id){
-  if(!confirm('Smazat projekt?'))return;
-  projects=projects.filter(p=>p.id!==id);
-  localStorage.removeItem('sm_photos_'+id);
-  saveProjects();renderProjectScreen();
-}
 
 function openProject(id){
   const p=projects.find(x=>x.id===id);if(!p)return;
@@ -701,7 +650,7 @@ function goHome(){
   document.getElementById('main-app').style.display='none';
   document.getElementById('project-screen').classList.remove('hidden');
   document.getElementById('filter-panel').classList.remove('open');
-  renderProjectScreen();
+  renderProjectScreen();  // async, no need to await
 }
 
 // ── RESIZE SIDEBAR ────────────────────────────────────────────────────────────
